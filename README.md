@@ -1,2 +1,2 @@
-# Point-Cloud-Classification-Segmentation
-Point Cloud Classification &amp; Segmentation
+# Point Cloud Classification & Segmentation
+Point Cloud Classification & Segmentation
