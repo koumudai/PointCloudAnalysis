@@ -1,3 +1,0 @@
-dataset_name: ScanObjectNN_OBJ_BG_PB_T50_R
-dataset_path: data/ScanObjectNN/ScanObjectNN_OBJ_BG_PB_T50_R
-pointcloud_path: data/ScanObjectNN/main_split

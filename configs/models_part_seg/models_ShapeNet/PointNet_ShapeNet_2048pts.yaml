@@ -13,6 +13,7 @@ scheduler: {
   },
 }
 dataset: {
+  name: ShapeNet,
   train: {
     _base_: configs/datasets/datasets_ShapeNet/ShapeNet.yaml,
     others: {
@@ -33,7 +34,7 @@ dataset: {
   },
 }
 model: {
-  model_name: PointNetPartSeg,
+  name: PointNetPartSeg,
   use_normals: False,
 }
 loss: {

@@ -1,9 +1,13 @@
-from tools import pretrain_run_net as pretrain
-from tools import finetune_run_net as finetune
-from tools import test_run_net as test_net
-from utils import parser, dist_utils, misc
+import _init_path
+from tools import train
+# from tools import pretrain_run_net as pretrain_net
+# from tools import finetune_run_net as finetune_net
+# from tools import test_run_net as test_net
+from utils import dist_utils
+from utils import misc
 from utils.logger import *
-from utils.config import *
+from parsers.parser_utils import *
+import parsers.parser_cls as parser
 import time
 import os
 import torch
@@ -11,8 +15,8 @@ from tensorboardX import SummaryWriter
 
 
 def main():
-    # args
-    args = parser.get_args()
+    # args and cfgs
+    args, cfgs = parser.get_args_and_cfgs()
     # CUDA
     args.use_gpu = torch.cuda.is_available()
     if args.use_gpu:
@@ -34,25 +38,23 @@ def main():
     if not args.test:
         if args.local_rank == 0:
             train_writer = SummaryWriter(os.path.join(args.tfboard_path, 'train'))
-            val_writer = SummaryWriter(os.path.join(args.tfboard_path, 'test'))
+            valid_writer = SummaryWriter(os.path.join(args.tfboard_path, 'test'))
         else:
             train_writer = None
-            val_writer = None
-    # config
-    config = get_config(args, logger=logger)
+            valid_writer = None
     # batch size
     if args.distributed:
-        assert config.bs_train % world_size == 0 and config.bs_valid % world_size == 0 and config.bs_test % world_size == 0
-        config.dataset.train.others.bs = config.bs_train // world_size
-        config.dataset.valid.others.bs = config.bs_valid // world_size
-        config.dataset.test.others.bs = config.bs_test // world_size 
+        assert cfgs.bs_train % world_size == 0 and cfgs.bs_valid % world_size == 0 and cfgs.bs_test % world_size == 0
+        cfgs.dataset.train.others.bs = cfgs.bs_train // world_size
+        cfgs.dataset.valid.others.bs = cfgs.bs_valid // world_size
+        cfgs.dataset.test.others.bs = cfgs.bs_test // world_size 
     else:
-        config.dataset.train.others.bs = config.bs_train
-        config.dataset.valid.others.bs = config.bs_valid
-        config.dataset.test.others.bs = config.bs_test
+        cfgs.dataset.train.others.bs = cfgs.bs_train
+        cfgs.dataset.valid.others.bs = cfgs.bs_valid
+        cfgs.dataset.test.others.bs = cfgs.bs_test
     # log 
     log_args_to_file(args, 'args', logger=logger)
-    log_config_to_file(config, 'config', logger=logger)
+    log_cfgs_to_file(cfgs, 'cfgs', logger=logger)
     # exit()
     logger.info(f'Distributed training: {args.distributed}')
     # set random seeds
@@ -63,21 +65,23 @@ def main():
         assert args.local_rank == torch.distributed.get_rank() 
 
     if args.shot != -1:
-        config.dataset.train.others.shot = args.shot
-        config.dataset.train.others.way = args.way
-        config.dataset.train.others.fold = args.fold
-        config.dataset.val.others.shot = args.shot
-        config.dataset.val.others.way = args.way
-        config.dataset.val.others.fold = args.fold
-        
+        cfgs.dataset.train.others.shot = args.shot
+        cfgs.dataset.train.others.way = args.way
+        cfgs.dataset.train.others.fold = args.fold
+        cfgs.dataset.val.others.shot = args.shot
+        cfgs.dataset.val.others.way = args.way
+        cfgs.dataset.val.others.fold = args.fold
+    
     # run
+    train(args, cfgs)
+
     if args.test:
-        test_net(args, config)
+        test_net(args, cfgs)
     else:
         if args.finetune_model or args.scratch_model:
-            finetune(args, config, train_writer, val_writer)
+            finetune_net(args, cfgs, train_writer, valid_writer)
         else:
-            pretrain(args, config, train_writer, val_writer)
+            pretrain_net(args, cfgs, train_writer, valid_writer)
 
 
 if __name__ == '__main__':

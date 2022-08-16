@@ -47,19 +47,19 @@ def farthest_point_sample(point, npoint):
 
 class _ModelNet_XX(Dataset):
     def __init__(self, config, dataset_name, logger):
-        super().__init__()
-        assert dataset_name in ['ModelNet10', 'ModelNet40']
-        assert logger in ['ModelNet10', 'ModelNet40']
+        super(_ModelNet_XX, self).__init__()
+        assert dataset_name in ['ModelNet10', 'ModelNet40'], 'dataset_name error'
+        assert logger in ['ModelNet10', 'ModelNet40'], 'logger error'
         self.dataset_path = config.dataset_path
         self.pc_paths = config.pointcloud_path
-        self.n_point = config.n_point
+        self.n_point_all = config.n_point_all
         self.n_class = config.n_class
         self.use_normals = config.use_normals
         self.uniform = True
         self.process_data = True
         self.subset = config.subset
         assert self.subset in ['train', 'test']
-
+        print()
         self.class_file = f'{self.dataset_path}/{dataset_name}_shape_names.txt'
         self.class_names = [line.rstrip() for line in open(self.class_file)]
         self.class_dict = dict(zip(self.class_names, range(len(self.class_names))))
@@ -73,9 +73,9 @@ class _ModelNet_XX(Dataset):
         print_log(f'[DATASET] The size of {self.subset} data is {len(self.pc_paths)}', logger=logger)
 
         if self.uniform:
-            self.save_path = f'{self.dataset_path}/{dataset_name}_{self.subset}_{self.n_point}pts_fps.dat'
+            self.save_path = f'{self.dataset_path}/{dataset_name}_{self.subset}_{self.n_point_all}pts_fps.dat'
         else:
-            self.save_path = f'{self.dataset_path}/{dataset_name}_{self.subset}_{self.n_point}pts.dat'
+            self.save_path = f'{self.dataset_path}/{dataset_name}_{self.subset}_{self.n_point_all}pts.dat'
 
         if self.process_data:
             if not os.path.exists(self.save_path):
@@ -89,9 +89,9 @@ class _ModelNet_XX(Dataset):
                     point_set = np.loadtxt(fn[1], delimiter=',').astype(np.float32)
 
                     if self.uniform:
-                        point_set = farthest_point_sample(point_set, self.n_point)
+                        point_set = farthest_point_sample(point_set, self.n_point_all)
                     else:
-                        point_set = point_set[0:self.n_point, :]
+                        point_set = point_set[0:self.n_point_all, :]
 
                     self.list_of_points[idx] = point_set
                     self.list_of_labels[idx] = label
@@ -115,15 +115,15 @@ class _ModelNet_XX(Dataset):
             point_set = np.loadtxt(fn[1], delimiter=',').astype(np.float32)
 
             if self.uniform:
-                point_set = farthest_point_sample(point_set, self.n_point)
+                point_set = farthest_point_sample(point_set, self.n_point_all)
             else:
-                point_set = point_set[0:self.n_point, :]
+                point_set = point_set[0:self.n_point_all, :]
                 
         point_set[:, 0:3] = pc_normalize(point_set[:, 0:3])
         if not self.use_normals:
             point_set = point_set[:, 0:3]
     
-        pt_idxs = np.arange(0, point_set.shape[0])   # n_point
+        pt_idxs = np.arange(0, point_set.shape[0])   # n_point_all
         if self.subset == 'train':
             np.random.shuffle(pt_idxs)
         current_points = point_set[pt_idxs].copy()
@@ -139,10 +139,10 @@ class _ModelNet_XX(Dataset):
 @DATASETS.register_module()
 class ModelNet10(_ModelNet_XX):
     def __init__(self, config):
-        super(ModelNet10, self).__init__(config, 'modelnet10', 'ModelNet10')
+        super(ModelNet10, self).__init__(config, 'ModelNet10', 'ModelNet10')
 
 
 @DATASETS.register_module()
-class ModelNet40(Dataset):
+class ModelNet40(_ModelNet_XX):
     def __init__(self, config):
-        super(ModelNet10, self).__init__(config, 'modelnet40', 'ModelNet40')
+        super(ModelNet40, self).__init__(config, 'ModelNet40', 'ModelNet40')

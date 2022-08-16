@@ -1,9 +1,7 @@
 import os
-
 import torch
 import torch.multiprocessing as mp
 from torch import distributed as dist
-
 
 
 def init_dist(launcher, backend='nccl', **kwargs):
@@ -46,6 +44,7 @@ def reduce_tensor(tensor, args):
     torch.distributed.all_reduce(rt, op=torch.distributed.ReduceOp.SUM)
     rt /= args.world_size
     return rt
+
 
 def gather_tensor(tensor, args):
     output_tensors = [tensor.clone() for _ in range(args.world_size)]

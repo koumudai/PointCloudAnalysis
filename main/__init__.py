@@ -1,0 +1,1 @@
+print('main.__init__.py')

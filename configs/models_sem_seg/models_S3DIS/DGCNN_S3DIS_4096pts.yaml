@@ -13,6 +13,7 @@ scheduler: {
   },
 }
 dataset: {
+  name: S3DIS,
   train: {
     _base_: cfgs/configs_datasets/S3DIS.yaml,
     others: {
@@ -33,7 +34,7 @@ dataset: {
   },
 }
 model: {
-  model_name: DGCNNSemSeg,
+  name: DGCNNSemSeg,
   k_point: 20,
   d_embed: 1024,
   dropout: 0.5,

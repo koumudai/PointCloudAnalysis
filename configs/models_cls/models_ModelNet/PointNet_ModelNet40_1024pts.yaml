@@ -13,6 +13,7 @@ scheduler: {
   }
 }
 dataset: {
+  name: ModelNet40,
   train: {
     _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
     others: {
@@ -33,7 +34,7 @@ dataset: {
   },
 }
 model: {
-  model_name: PointNetCls,
+  name: PointNetCls,
   use_normals: False,
 }
 loss: {

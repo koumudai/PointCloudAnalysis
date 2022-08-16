@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 from collections import abc
-from pointnet2_ops import pointnet2_utils
+# from pointnet2_ops import pointnet2_utils
 
 
 def fps(data, number):
@@ -23,6 +23,7 @@ def fps(data, number):
 def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
 
+
 def build_lambda_sche(opti, config):
     if config.get('decay_step') is not None:
         lr_lbmd = lambda e: max(config.lr_decay ** (e / config.decay_step), config.lowest_decay)
@@ -31,6 +32,7 @@ def build_lambda_sche(opti, config):
         raise NotImplementedError()
     return scheduler
 
+
 def build_lambda_bnsche(model, config):
     if config.get('decay_step') is not None:
         bnm_lmbd = lambda e: max(config.bn_momentum * config.bn_decay ** (e / config.decay_step), config.lowest_decay)
@@ -38,7 +40,8 @@ def build_lambda_bnsche(model, config):
     else:
         raise NotImplementedError()
     return bnm_scheduler
-    
+
+
 def set_random_seed(seed, deterministic=False):
     """Set random seed.
     Args:
@@ -94,6 +97,7 @@ def set_bn_momentum_default(bn_momentum):
             m.momentum = bn_momentum
     return fn
 
+
 class BNMomentumScheduler(object):
 
     def __init__(
@@ -125,7 +129,6 @@ class BNMomentumScheduler(object):
         if epoch is None:
             epoch = self.last_epoch + 1
         return self.lmbd(epoch)
-
 
 
 def seprate_point_cloud(xyz, num_points, crop, fixed_points = None, padding_zeros = False):
@@ -183,6 +186,7 @@ def seprate_point_cloud(xyz, num_points, crop, fixed_points = None, padding_zero
 
     return input_data.contiguous(), crop_data.contiguous()
 
+
 def get_ptcloud_img(ptcloud):
     fig = plt.figure(figsize=(8, 8))
 
@@ -201,7 +205,6 @@ def get_ptcloud_img(ptcloud):
     img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
     img = img.reshape(fig.canvas.get_width_height()[::-1] + (3, ))
     return img
-
 
 
 def visualize_KITTI(path, data_list, titles = ['input','pred'], cmap=['bwr','autumn'], zdir='y', 

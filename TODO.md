@@ -27,17 +27,18 @@
 ## 框架
 
 - `configs`: 存放数据集或模型的配置信息, 配置信息格式为 `yaml`.
-    - `datasets`: 存放数据集的配置信息.
+    - `datasets`: 存放数据集的配置信息, 其下文件夹命名规范为 `datasets_{dataset_base_name}`.
         - `datasets_ModelNet`: 存放与数据集 `ModelNet` 相关的配置信息.
         - `datasets_ScanObjectNN`: 存放与数据集 `ScanObjectNN` 相关的配置信息.
         - `datasets_ShapeNet_55_34`: 存放与数据集 `ShapeNet_55_34` 相关的配置信息.
-    - `models_cls`: 存放与 `cls` 任务相关的模型配置信息.
-        - `models_ModelNet`:
+    - `models_cls`: 存放与 `cls` 任务相关的模型配置信息, 其下文件夹命名规范为 `models_{dataset_base_name}`.
+        - `models_ModelNet`: 存放与 `ModelNet` 数据集相关的模型配置信息, 其下文件夹命名规范为 `{model_name}_{dataset_name}_{n_point}pts.yaml`.
+            - `DGCNN_ModelNet40_1024pts.yaml`: 
         - `models_ScanObjectNN`:
         - `models_ShapeNet_55_34`:
-    - `models_part_seg`: 存放与 `part_seg` 任务相关的模型配置信息.
+    - `models_part_seg`: 存放与 `part_seg` 任务相关的模型配置信息, 其下文件夹命名规范为 `models_{dataset_base_name}`.
         - `models_ShapeNet`:
-    - `models_sem_seg`: 存放与 `sem_seg` 任务相关的模型配置信息.
+    - `models_sem_seg`: 存放与 `sem_seg` 任务相关的模型配置信息, 其下文件夹命名规范为 `models_{dataset_base_name}`.
         - `models_S3DIS`:
 - `data`: 存放数据集
     - `ModelNet`: 存放 `ModelNet` 数据集的信息.
@@ -121,12 +122,118 @@
 - `README.md`
 - `requirements.txt`
 
-## TODO List
-
 ## Yaml Formatter.py
 
 ```bash
 python ./yaml_formatter.py
 ```
+
+## TODO List 
+
+```yaml
+args:
+	resume: 是否重新开始
+	experiment_path:
+	local_rank:
+	config:
+	
+
+
+cfgs:
+
+    dataset:
+        train:
+            other:
+                bs: reference bs_train
+        valid:
+            other:
+                bs: reference bs_valid
+    	test:
+            other:
+                bs: reference bs_test
+    
+    
+    
+    
+    
+    bs_train
+    bs_valid
+    bs_test
+```
+
+## BUG
+
+```
+./utils/config.py 中 save_experiment_config 有问题
+```
+
+
+
+
+
+
+
+在 args 中定义 resume 和 experiment_path,
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
