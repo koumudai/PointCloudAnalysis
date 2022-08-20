@@ -1,3 +1,0 @@
-name: ScanObjectNN_OBJ_ONLY
-dataset_path: data/ScanObjectNN/ScanObjectNN_OBJ_ONLY
-pointcloud_path: data/ScanObjectNN/main_split_nobg

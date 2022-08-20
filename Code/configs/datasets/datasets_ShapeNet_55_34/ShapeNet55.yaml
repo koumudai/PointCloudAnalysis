@@ -1,0 +1,4 @@
+name: ShapeNet55
+dataset_path: data/ShapeNet_55_34/ShapeNet55
+pointcloud_path: data/ShapeNet_55_34/shapenet_pc
+n_point: 8192

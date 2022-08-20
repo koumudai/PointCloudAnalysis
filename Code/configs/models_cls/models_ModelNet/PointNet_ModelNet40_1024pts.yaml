@@ -1,0 +1,47 @@
+optimizer: {
+  type: AdamW,
+  kwargs: {
+    lr: 1.0e-3,
+    weight_decay: 1.0e-4,
+  }
+}
+scheduler: {
+  type: CosineAnnealingLR,
+  kwargs: {
+    epochs: 200,
+    eta_min: 1.0e-3,
+  }
+}
+dataset: {
+  name: ModelNet40,
+  train: {
+    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
+    others: {
+      subset: train,
+    },
+  },
+  valid: {
+    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
+    others: {
+      subset: test,
+    },
+  },
+  test: {
+    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
+    others: {
+      subset: test,
+    },
+  },
+}
+model: {
+  name: PointNetCls,
+  use_normals: False,
+}
+loss: {
+  loss_name: PointNetLoss,
+  mat_diff_loss_scale: 0.001,
+}
+bs_train: 24
+bs_test: 24
+n_point: 1024
+max_epoch: 200

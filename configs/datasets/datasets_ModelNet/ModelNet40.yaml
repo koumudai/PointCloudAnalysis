@@ -1,5 +1,0 @@
-name: ModelNet40
-dataset_path: data/ModelNet/ModelNet40
-pointcloud_path: data/ModelNet/dataset
-n_point_all: 8192
-n_class: 40

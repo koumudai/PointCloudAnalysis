@@ -1,0 +1,45 @@
+optimizer: {
+  type: AdamW,
+  kwargs: {
+    lr: 1.0e-3,
+    weight_decay: 1.0e-4,
+  },
+}
+scheduler: {
+  type: CosineAnnealingLR,
+  kwargs: {
+    epochs: 200,
+    eta_min: 1.0e-3,
+  },
+}
+dataset: {
+  name: ShapeNet,
+  train: {
+    _base_: configs/datasets/datasets_ShapeNet/ShapeNet.yaml,
+    others: {
+      subset: train,
+    },
+  },
+  valid: {
+    _base_: configs/datasets/datasets_ShapeNet/ShapeNet.yaml,
+    others: {
+      subset: test,
+    },
+  },
+  test: {
+    _base_: configs/datasets/datasets_ShapeNet/ShapeNet.yaml,
+    others: {
+      subset: test,
+    },
+  },
+}
+model: {
+  name: DGCNNPartSeg,
+  k_point: 40,
+  d_embed: 1024,
+  dropout: 0.5,
+}
+bs_train: 32
+bs_test: 16
+n_point: 2048
+max_epoch: 200

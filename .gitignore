@@ -1,5 +1,9 @@
 __pycache__/
 nothing.py
 nothing.yaml
-rename.py
-data/ModelNet/dataset
+models_test.py
+Code/data/ModelNet/dataset
+Code/data/ScanObjectNN/dataset
+Code/data/ShapeNet_55_34/dataset
+nothing/
+References/

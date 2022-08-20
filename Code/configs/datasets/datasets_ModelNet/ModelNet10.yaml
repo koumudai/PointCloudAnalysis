@@ -1,0 +1,5 @@
+name: ModelNet10
+dataset_path: data/ModelNet/ModelNet10
+pointcloud_path: data/ModelNet/dataset
+n_point_all: 8192
+n_class: 10

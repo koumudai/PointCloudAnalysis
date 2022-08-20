@@ -1,0 +1,51 @@
+optimizer: {
+  type: AdamW,
+  kwargs: {
+    lr: 1.0e-3,
+    weight_decay: 1.0e-4,
+  }
+}
+scheduler: {
+  type: CosineAnnealingLR,
+  kwargs: {
+    epochs: 200,
+    eta_min: 1.0e-3,
+  }
+}
+dataset: {
+  name: ModelNet40,
+  train: {
+    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
+    others: {
+      subset: train,
+      use_normals: False,
+    },
+  },
+  valid: {
+    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
+    others: {
+      subset: test,
+      use_normals: False,
+    },
+  },
+  test: {
+    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
+    others: {
+      subset: test,
+      use_normals: False,
+    },
+  },
+}
+model: {
+  name: DGCNNCls,
+  n_class: 40,
+  n_point: 1024,
+  k_point: 20,
+  d_embed: 1024,
+  dropout: 0.5,
+}
+bs_train: 32
+bs_valid: 32
+bs_test: 32
+n_point: 1024
+max_epoch: 200
