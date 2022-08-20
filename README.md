@@ -1,4 +1,4 @@
-# Point Cloud Classification & Segmentation
+# Point Cloud Analysis
 
 Point Cloud Classification & Segmentation
 
