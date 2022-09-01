@@ -4,6 +4,7 @@ import torch
 import torch.optim as optim
 from datasets import build_dataset_from_cfg
 from models import build_model_from_cfg
+from losses import build_loss_from_cfg
 from utils.logger import *
 from utils.misc import *
 from timm.scheduler import CosineLRScheduler
@@ -42,15 +43,15 @@ def build_loss(cfgs):
 
 
 def build_optimizer(cfgs, model):
-    optimizer = build_optimizer_from_cfg(cfgs, model)
-    return optimizer
+    # optimizer = build_optimizer_from_cfg(cfgs, model)
+    # return optimizer
 
     opti_config = cfgs.optimizer
     if opti_config.type == 'AdamW':
         def add_weight_decay(model, weight_decay=1e-5, skip_list=()):
             decay = []
             no_decay = []
-            for name, param in model.module.named_parameters():
+            for name, param in model.named_parameters():
                 if not param.requires_grad:
                     continue  # frozen weights
                 if len(param.shape) == 1 or name.endswith(".bias") or 'token' in name or name in skip_list:
@@ -74,8 +75,8 @@ def build_optimizer(cfgs, model):
 
 def build_scheduler(cfgs, model, optimizer):
 
-    scheduler = build_scheduler_from_cfg(cfgs, model, optimizer)
-    return scheduler
+    # scheduler = build_scheduler_from_cfg(cfgs, model, optimizer)
+    # return scheduler
 
     sche_config = cfgs.scheduler
     if sche_config.type == 'LambdaLR':

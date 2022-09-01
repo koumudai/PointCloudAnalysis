@@ -39,15 +39,15 @@ class ManagerCls:
         # build scheduler
         self.build_scheduler()
         # build record file
-        self.build_record()
+        # self.build_record()
         # bulid transform
-        self.build_transform()
+        # self.build_transform()
         # resume model
-        self.resume_model()
+        # self.resume_model()
         # resume optimizer
-        self.resume_optimizer()
-        # resume scheduler()
-        self.resmue_scheduler()
+        # self.resume_optimizer()
+        # resume scheduler
+        # self.resmue_scheduler()
         pass
 
     def build_param(self):
@@ -90,10 +90,10 @@ class ManagerCls:
         self.loss = builder.build_loss(self.cfgs.loss)
 
     def build_optimizer(self):
-        self.optimizer = builder.build_optimizer(self.cfgs.optimizer, self.model)
+        self.optimizer = builder.build_optimizer(self.cfgs, self.model)
 
     def build_scheduler(self):
-        self.scheduler = builder.build_scheduler(self.cfgs.optimizer, self.model, self.optimizer)
+        self.scheduler = builder.build_scheduler(self.cfgs, self.model, self.optimizer)
 
     def build_record(self):
         raise NotImplementedError()
@@ -141,23 +141,35 @@ class ManagerCls:
 
         self.model.train()  # set model to train mode
 
+        train_loss = 0.0
+        count = 0.0
+
         for batch_idx, (points, target) in tqdm(enumerate(self.train_dataloader), total=len(self.train_dataloader)):
 
+            points = points.permute(0, 2, 1)
+            
             assert points.size(1) == self.cfgs.n_point
             points = self.train_transforms(points)
 
             if self.args.use_gpu:
                 points, target = points.cuda(), target.cuda()
 
-            pred = self.model(points)
+            self.optimizer.zero_grad()
 
-            loss = self.loss(pred, target.long())
+            logits = self.model(points)
+
+            loss = self.loss(logits, target.long())
+
+            loss.backward()
+
+            torch.nn.utils.clip_grad_norm_(self.model.parameters(), 1)
+            self.optimizer.step()
+
+            pred = logits.max(dim=1)[1] # pred and target are all start from zero
+
+            count += points.size(0)
 
             # TODO: cal metrics
-
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
 
 
         epoch_end_time = time.time()

@@ -59,7 +59,6 @@ class _ModelNet_XX(Dataset):
         self.process_data = True
         self.subset = config.subset
         assert self.subset in ['train', 'test']
-        print()
         self.class_file = f'{self.dataset_path}/{dataset_name}_shape_names.txt'
         self.class_names = [line.rstrip() for line in open(self.class_file)]
         self.class_dict = dict(zip(self.class_names, range(len(self.class_names))))

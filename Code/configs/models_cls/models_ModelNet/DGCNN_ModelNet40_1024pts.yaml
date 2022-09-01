@@ -42,11 +42,12 @@ optimizer: {
   }
 }
 scheduler: {
-  type: CosineAnnealingLR,
-  kwargs: {
-    epochs: 200,
-    eta_min: 1.0e-3,
-  }
+  type: function,
+  # type: CosineAnnealingLR,
+  # kwargs: {
+  #   epochs: 200,
+  #   eta_min: 1.0e-3,
+  # }
 }
 
 bs_train: 32
