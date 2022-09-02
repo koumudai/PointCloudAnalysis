@@ -1,3 +1,40 @@
+bs_train: 120
+bs_valid: 120
+bs_test: 120
+max_epoch: 200
+dataset: {
+  name: ModelNet40,
+  train: {
+    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
+    others: {
+      subset: train,
+      n_point: 1024,
+    }
+  },
+  valid: {
+    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
+    others: {
+      subset: test,
+      n_point: 1024,
+    }
+  },
+  test: {
+    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
+    others: {
+      subset: test,
+      n_point: 1024,
+    }
+  },
+}
+model: {
+  name: PointNetCls,
+  n_class: 40,
+  n_point: 1024,
+  use_normals: False,
+}
+loss: {
+  name: PointNetLoss,
+}
 optimizer: {
   type: AdamW,
   kwargs: {
@@ -6,42 +43,9 @@ optimizer: {
   }
 }
 scheduler: {
-  type: CosineAnnealingLR,
-  kwargs: {
-    epochs: 200,
-    eta_min: 1.0e-3,
-  }
+  type: function,
 }
-dataset: {
-  name: ModelNet40,
-  train: {
-    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
-    others: {
-      subset: train,
-    },
-  },
-  valid: {
-    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
-    others: {
-      subset: test,
-    },
-  },
-  test: {
-    _base_: configs/datasets/datasets_ModelNet/ModelNet40.yaml,
-    others: {
-      subset: test,
-    },
-  },
+transforms: {
+  
 }
-model: {
-  name: PointNetCls,
-  use_normals: False,
-}
-loss: {
-  loss_name: PointNetLoss,
-  mat_diff_loss_scale: 0.001,
-}
-bs_train: 24
-bs_test: 24
-n_point: 1024
-max_epoch: 200
+

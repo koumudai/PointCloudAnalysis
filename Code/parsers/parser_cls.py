@@ -7,10 +7,12 @@ from pathlib import Path
 def get_args_and_cfgs():
     parser=argparse.ArgumentParser()
     parser.add_argument('--cfg_file', type=str, help='yaml config file')
-    parser.add_argument('--local_rank', type=int, default=0)
     parser.add_argument('--use_gpu', action='store_true', default=True, help='use gpu mode')
-    parser.add_argument('--gpu', type=str, default='0', help='specify gpu device')
+    parser.add_argument('--gpu', type=str, default='4, 5, 6, 7', help='specify gpu device')
     parser.add_argument('--num_workers', type=int, default=4)
+    parser.add_argument('--bs_train', type=int, default=0)
+    parser.add_argument('--bs_valid', type=int, default=0)
+    parser.add_argument('--bs_test', type=int, default=0)
     # seed
     parser.add_argument('--seed', type=int, default=0, help='random seed')
     parser.add_argument( '--deterministic', action='store_true', help='whether to set deterministic options for CUDNN backend.')
@@ -18,16 +20,13 @@ def get_args_and_cfgs():
     parser.add_argument('--exp_name', type=str, default='default', help='experiment name')
     parser.add_argument('--start_ckpts', type=str, default=None, help='reload used ckpt path')
     parser.add_argument('--ckpts', type=str, default=None, help='test used ckpt path')
-    parser.add_argument('--val_freq', type=int, default=1, help='test freq')
+    parser.add_argument('--valid_freq', type=int, default=1, help='test freq')
     parser.add_argument('--resume', action='store_true', default=False, help='autoresume training (interrupted by accident)')
     parser.add_argument('--test', action='store_true', default=False, help='test mode for certain ckpt')
     parser.add_argument('--finetune_model', action='store_true', default=False, help='finetune modelnet with pretrained weight')
     parser.add_argument('--scratch_model', action='store_true', default=False, help='training modelnet from scratch')
     parser.add_argument('--label_smoothing', action='store_true', default=False, help='use label smoothing loss trick')
-    parser.add_argument('--mode', choices=['easy', 'median', 'hard', None],default=None,help='difficulty mode for shapenet')
-    parser.add_argument('--way', type=int, default=-1)
-    parser.add_argument('--shot', type=int, default=-1)
-    parser.add_argument('--fold', type=int, default=-1)
+    parser.add_argument('--mode', choices=['easy', 'median', 'hard', None], default=None,help='difficulty mode for shapenet')
 
     args = parser.parse_args()
 

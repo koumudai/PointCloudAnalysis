@@ -1,6 +1,6 @@
-from .build import build_loss_from_cfg
+from losses.build import build_criterion_from_cfg
 # PointNet
-
+from losses.PointNet.pointnet_loss import PointNetLoss
 # PointNet++
 
 # DGCNN

@@ -1,25 +1,17 @@
 dataset: {
   name: ModelNet10,
+  _base_: configs/datasets/datasets_ModelNet/ModelNet10.yaml,
   train: {
-    _base_: configs/datasets/datasets_ModelNet/ModelNet10.yaml,
-    others: {
-      subset: train,
-      use_normals: False,
-    },
+    subset: train,
+    use_normals: False,
   },
   valid: {
-    _base_: configs/datasets/datasets_ModelNet/ModelNet10.yaml,
-    others: {
-      subset: test,
-      use_normals: False,
-    },
+    subset: test,
+    use_normals: False,
   },
   test: {
-    _base_: configs/datasets/datasets_ModelNet/ModelNet10.yaml,
-    others: {
-      subset: test,
-      use_normals: False,
-    },
+    subset: test,
+    use_normals: False,
   },
 }
 model: {

@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-from tools import builder
+from managers import builder
 from utils import misc, dist_utils
 import time
 from utils.logger import *

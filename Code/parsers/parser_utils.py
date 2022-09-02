@@ -54,7 +54,7 @@ def get_cfgs(args, logger=None):
         print_log(f'Resume yaml from {cfg_file}', logger = logger)
         args.cfg_file = cfg_file
     cfgs = get_cfgs_from_yaml(args.cfg_file)
-    if not args.resume and args.local_rank == 0:
+    if not args.resume:
         save_experiment_config(args, logger)
     return cfgs
 

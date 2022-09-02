@@ -3,3 +3,5 @@ nothing.py
 nothing.yaml
 rename.py
 data/ModelNet/dataset
+*.dat
+experiments/

@@ -13,8 +13,8 @@ from models.build import MODELS
 class PointNetCls(nn.Module):
     def __init__(self, config):
         super().__init__()
-        self.n_class = config.model.n_class
-        self.use_normals = config.model.use_normals
+        self.n_class = config.n_class
+        self.use_normals = config.use_normals
         channel = 6 if self.use_normals else 3
         self.feat = PointNetEncoder(global_feat=True, feature_transform=True, channel=channel)
         self.head = nn.Sequential(
@@ -29,7 +29,7 @@ class PointNetCls(nn.Module):
             nn.LogSoftmax(dim=1)
         )
 
-    def forward(self, x):
+    def forward(self, x, z):
         x, trans, trans_feat = self.feat(x)
         x = self.head(x)
         return x, trans_feat

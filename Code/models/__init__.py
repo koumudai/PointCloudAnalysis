@@ -1,4 +1,4 @@
-from .build import build_model_from_cfg
+from models.build import build_model_from_cfg
 # PointNet
 from models.PointNet.pointnet_cls import PointNetCls
 from models.PointNet.pointnet_part_seg import PointNetPartSeg

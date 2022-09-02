@@ -54,7 +54,7 @@ class _ModelNet_XX(Dataset):
         self.pc_paths = config.pointcloud_path
         self.n_point_all = config.n_point_all
         self.n_class = config.n_class
-        self.use_normals = config.use_normals
+        self.use_normals = config.get('use_normals', False) 
         self.uniform = True
         self.process_data = True
         self.subset = config.subset
@@ -125,14 +125,16 @@ class _ModelNet_XX(Dataset):
         pt_idxs = np.arange(0, point_set.shape[0])   # n_point_all
         if self.subset == 'train':
             np.random.shuffle(pt_idxs)
-        current_points = point_set[pt_idxs].copy()
-        current_points = torch.from_numpy(current_points).float()
+        point_set = point_set[pt_idxs].copy()
+        point_set = torch.from_numpy(point_set).float()
 
-        return current_points, label[0]
+        feature, coord, label = point_set, point_set[:, :3], label[0]
+
+        return feature, coord, label
 
     def __getitem__(self, idx):
-        points, label = self._get_item(idx)
-        return points, label
+        feature, coord, label = self._get_item(idx)
+        return feature, coord, label
 
 
 @DATASETS.register_module()

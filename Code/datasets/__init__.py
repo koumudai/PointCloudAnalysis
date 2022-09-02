@@ -1,4 +1,4 @@
-from .build import build_dataset_from_cfg
+from datasets.build import build_dataset_from_cfg
 # ModelNet
 from datasets.ModelNetDataset import ModelNet10
 from datasets.ModelNetDataset import ModelNet40
