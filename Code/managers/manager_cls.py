@@ -224,12 +224,7 @@ class ManagerCls:
                 pbar.set_description(f'Train Epoch [{epoch_idx}/{cfgs.max_epoch}] Loss: {loss_meter.val:.3f}, Overall Accuracy: {confusion_matrix.overall_accuray:.2f}')
         macc, oa, cls_accs = confusion_matrix.all_acc()
         return loss_meter.avg, oa, macc, cls_accs, confusion_matrix
-    
 
-
-
-
-    
     @torch.no_grad()
     def valid_one_epoch(self, cfgs, dataloader):
         return self.test_one_epoch(cfgs, dataloader)
