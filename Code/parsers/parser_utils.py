@@ -47,11 +47,11 @@ def get_cfgs_from_yaml(yaml_file):
 
 def get_cfgs(args, logger=None):
     if args.resume:
-        cfg_file = f'{args.experiment_path}/config.yaml'
+        cfg_file = f'{args.exp_path}/config.yaml'
         if not os.path.exists(cfg_file):
-            print_log("Failed to resume", logger = logger)
+            print_log("Failed to resume", logger=logger)
             raise FileNotFoundError()
-        print_log(f'Resume yaml from {cfg_file}', logger = logger)
+        print_log(f'Resume yaml from {cfg_file}', logger=logger)
         args.cfg_file = cfg_file
     cfgs = get_cfgs_from_yaml(args.cfg_file)
     if not args.resume:
@@ -60,6 +60,6 @@ def get_cfgs(args, logger=None):
 
 
 def save_experiment_config(args, logger=None):
-    cfg_file = f'{args.experiment_path}/config.yaml'
+    cfg_file = f'{args.exp_path}/config.yaml'
     shutil.copy2(args.cfg_file, cfg_file)
     print_log(f'Copy the Config file from {args.cfg_file} to {cfg_file}', logger=logger)

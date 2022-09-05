@@ -4,5 +4,4 @@ from .plateau_lr import PlateauLRScheduler
 from .poly_lr import PolyLRScheduler
 from .step_lr import StepLRScheduler
 from .tanh_lr import TanhLRScheduler
-
 from .scheduler_factory import build_scheduler_from_cfg

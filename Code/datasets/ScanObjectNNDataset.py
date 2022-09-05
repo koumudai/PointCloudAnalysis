@@ -12,6 +12,7 @@ from tqdm import tqdm
 from torch.utils.data import Dataset
 from .build import DATASETS
 from utils.logger import *
+from datasets.dataset_utils import *
 
 
 class _ScanObjectNN_XX(Dataset):
@@ -29,18 +30,14 @@ class _ScanObjectNN_XX(Dataset):
     def __len__(self):
         return self.points.shape[0]
 
-    def _get_item(self, idx):
+    def __getitem__(self, idx):
         pt_idxs = np.arange(0, self.points.shape[1])   # n_point
         if self.subset == 'train':
             np.random.shuffle(pt_idxs)
 
-        current_points = self.points[idx, pt_idxs].copy()
-        current_points = torch.from_numpy(current_points).float()
+        points = self.points[idx, pt_idxs].copy()
+        points = torch.from_numpy(points).float()
         label = self.labels[idx]
-        return current_points, label
-
-    def __getitem__(self, idx):
-        points, label = self._get_item(idx)
         return points, label
 
 @DATASETS.register_module()

@@ -1,11 +1,5 @@
 # TODO
 
-```
-conda create -n pca python=3.7
-conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit=11.3 -c pytorch
-pip install -r requirements.txt
-```
-
 ## 缩写
 
 - `cls`:
@@ -143,19 +137,42 @@ pip install -r requirements.txt
 - `README.md`
 - `requirements.txt`
 
-## Yaml Formatter
+<!-- ## Yaml Formatter
 
 ```bash
 python ./yaml_formatter.py
-```
+``` -->
 
 ## TODO List
 
 1. `registry.py` 需要重写, 以满足 `./tools/builder.py`, `configs/models` 下的每个 `yaml` 配置文件中的 `dataset` 属性的结构需要全部修改.
 2. 需要修改 `dataset` 中的返回值, 将其改成字典
+3. 
+
+模型的输入为: feature, coord
+模型的输出为: logits, rtkwargs
 
 
+## Requirement
+
+```
+conda create -n pca python=3.7
+conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit=11.3 -c pytorch
+pip install -r requirements.txt
+```
 
 ## References
 
 [1] [PointNet](https://arxiv.org/abs/1612.00593)
+
+
+
+```yaml
+args:
+  cfg_file: str
+  use_gpu: True
+  gpu: 4, 5, 6, 7
+  num_workers: 8
+  seed: 0
+
+```

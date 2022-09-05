@@ -5,3 +5,5 @@ rename.py
 data/ModelNet/dataset
 *.dat
 experiments/
+yaml_formatter.py
+debug.py

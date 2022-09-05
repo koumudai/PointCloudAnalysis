@@ -8,14 +8,7 @@ from tqdm import tqdm
 from torch.utils.data import Dataset
 from .build import DATASETS
 from utils.logger import *
-
-
-def pc_normalize(pc):
-    centroid = np.mean(pc, axis=0)
-    pc = pc - centroid
-    bound = np.max(np.sqrt(np.sum(pc**2, axis=1)))
-    pc = pc / bound
-    return pc
+from datasets.dataset_utils import *
 
 
 @DATASETS.register_module()

@@ -14,9 +14,11 @@ class PointNetLoss(nn.Module):
         super().__init__()
         self.mat_diff_loss_scale = cfgs.get('mat_diff_loss_scale', 0.001)
 
-    def forward(self, pred, target, trans_feat, weight=None):
+    def forward(self, pred, target, **rtkwargs):
+        trans_feat = rtkwargs['trans_feat']
+        weight = rtkwargs.get('weight', None)
         loss = F.nll_loss(pred, target, weight=weight)
         mat_diff_loss = feature_transform_reguliarzer(trans_feat)
-        print(loss, mat_diff_loss, self.mat_diff_loss_scale)
+        # print(loss, mat_diff_loss, self.mat_diff_loss_scale)
         total_loss = loss + mat_diff_loss * self.mat_diff_loss_scale
         return total_loss

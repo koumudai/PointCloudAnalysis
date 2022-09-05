@@ -32,4 +32,4 @@ class PointNetCls(nn.Module):
     def forward(self, x, z):
         x, trans, trans_feat = self.feat(x)
         x = self.head(x)
-        return x, trans_feat
+        return x, {'trans_feat': trans_feat}

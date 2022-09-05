@@ -142,7 +142,7 @@ def optimizer_kwargs(cfg):
 
 def build_optimizer_from_cfg(
         model,
-        NAME: str = 'sgd',
+        name: str = 'sgd',
         lr: Optional[float] = None,
         weight_decay: float = 0.,
         momentum: float = 0.9,
@@ -151,7 +151,7 @@ def build_optimizer_from_cfg(
     """ Create an optimizer.
     Args:
         model (nn.Module): model containing parameters to optimize
-        NAME: name of optimizer to create
+        name: name of optimizer to create
         lr: initial learning rate
         weight_decay: weight decay to apply in optimizer
         momentum:  momentum for momentum based optimizers (others may use betas via kwargs)
@@ -187,7 +187,7 @@ def build_optimizer_from_cfg(
         parameters = model.parameters()
     # TODO: Here. split encoder out? How.  
 
-    opt_lower = NAME.lower()
+    opt_lower = name.lower()
     opt_split = opt_lower.split('_')
     opt_lower = opt_split[-1]
     if 'fused' in opt_lower:

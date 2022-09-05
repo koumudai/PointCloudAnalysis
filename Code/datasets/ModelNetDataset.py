@@ -11,53 +11,22 @@ from tqdm import tqdm
 from torch.utils.data import Dataset
 from datasets.build import DATASETS
 from utils.logger import *
-
-
-def pc_normalize(pc):
-    centroid = np.mean(pc, axis=0)
-    pc = pc - centroid
-    bound = np.max(np.sqrt(np.sum(pc**2, axis=1)))
-    pc = pc / bound
-    return pc
-
-
-def farthest_point_sample(point, npoint):
-    """
-    Input:
-        xyz: pointcloud data, [N, D]
-        npoint: number of samples
-    Return:
-        centroids: sampled pointcloud index, [npoint, D]
-    """
-    N, D = point.shape
-    xyz = point[:, :3]
-    centroids = np.zeros((npoint, ))
-    distance = np.full((N, ), 1e10)
-    farthest = np.random.randint(0, N)
-    for i in range(npoint):
-        centroids[i] = farthest
-        centroid = xyz[farthest, :]
-        dist = np.sum((xyz - centroid) ** 2, -1)
-        mask = dist < distance
-        distance[mask] = dist[mask]
-        farthest = np.argmax(distance, -1)
-    point = point[centroids.astype(np.int32)]
-    return point
+from datasets.dataset_utils import *
 
 
 class _ModelNet_XX(Dataset):
-    def __init__(self, config, dataset_name, logger):
+    def __init__(self, cfgs, dataset_name, logger):
         super(_ModelNet_XX, self).__init__()
         assert dataset_name in ['ModelNet10', 'ModelNet40'], 'dataset_name error'
         assert logger in ['ModelNet10', 'ModelNet40'], 'logger error'
-        self.dataset_path = config.dataset_path
-        self.pc_paths = config.pointcloud_path
-        self.n_point_all = config.n_point_all
-        self.n_class = config.n_class
-        self.use_normals = config.get('use_normals', False) 
+        self.dataset_path = cfgs.dataset_path
+        self.pc_paths = cfgs.pointcloud_path
+        self.n_point_all = cfgs.n_point_all
+        self.n_class = cfgs.n_class
+        self.subset = cfgs.subset
+        self.use_normals = cfgs.use_normals
         self.uniform = True
         self.process_data = True
-        self.subset = config.subset
         assert self.subset in ['train', 'test']
         self.class_file = f'{self.dataset_path}/{dataset_name}_shape_names.txt'
         self.class_names = [line.rstrip() for line in open(self.class_file)]
@@ -85,14 +54,14 @@ class _ModelNet_XX(Dataset):
                 for idx in tqdm(range(len(self.pc_paths)), total=len(self.pc_paths)):
                     fn = self.pc_paths[idx]
                     label = np.array([self.class_dict[fn[0]]]).astype(np.int32)
-                    point_set = np.loadtxt(fn[1], delimiter=',').astype(np.float32)
+                    points = np.loadtxt(fn[1], delimiter=',').astype(np.float32)
 
                     if self.uniform:
-                        point_set = farthest_point_sample(point_set, self.n_point_all)
+                        points = farthest_point_sample(points, self.n_point_all)
                     else:
-                        point_set = point_set[0:self.n_point_all, :]
+                        points = points[0:self.n_point_all, :]
 
-                    self.list_of_points[idx] = point_set
+                    self.list_of_points[idx] = points
                     self.list_of_labels[idx] = label
 
                 with open(self.save_path, 'wb') as f:
@@ -105,35 +74,30 @@ class _ModelNet_XX(Dataset):
     def __len__(self):
         return len(self.pc_paths)
 
-    def _get_item(self, idx):
+    def __getitem__(self, idx):
         if self.process_data:
-            point_set, label = self.list_of_points[idx], self.list_of_labels[idx]
+            points, label = self.list_of_points[idx], self.list_of_labels[idx]
         else:
             fn = self.pc_paths[idx]
             label = np.array([self.class_dict[fn[0]]]).astype(np.int32)
-            point_set = np.loadtxt(fn[1], delimiter=',').astype(np.float32)
+            points = np.loadtxt(fn[1], delimiter=',').astype(np.float32)
 
             if self.uniform:
-                point_set = farthest_point_sample(point_set, self.n_point_all)
+                points = farthest_point_sample(points, self.n_point_all)
             else:
-                point_set = point_set[0:self.n_point_all, :]
+                points = points[0:self.n_point_all, :]
                 
-        point_set[:, 0:3] = pc_normalize(point_set[:, 0:3])
+        points[:, 0:3] = pc_normalize(points[:, 0:3])
         if not self.use_normals:
-            point_set = point_set[:, 0:3]
-    
-        pt_idxs = np.arange(0, point_set.shape[0])   # n_point_all
+            points = points[:, 0:3]
+
+        pt_idxs = np.arange(0, points.shape[0])   # n_point_all
         if self.subset == 'train':
             np.random.shuffle(pt_idxs)
-        point_set = point_set[pt_idxs].copy()
-        point_set = torch.from_numpy(point_set).float()
+        points = torch.from_numpy(points[pt_idxs].copy()).float()
 
-        feature, coord, label = point_set, point_set[:, :3], label[0]
+        feature, coord, label = points, points[:, :3], label[0]
 
-        return feature, coord, label
-
-    def __getitem__(self, idx):
-        feature, coord, label = self._get_item(idx)
         return feature, coord, label
 
 

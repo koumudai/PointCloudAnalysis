@@ -6,7 +6,7 @@ Code        : https://github.com/hrzhou2/AdaptConv-master
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from models.pointcloud_utils import *
+from models.model_utils import *
 
 
 def get_graph_feature(feature, k_group, idx=None, dim6=False):

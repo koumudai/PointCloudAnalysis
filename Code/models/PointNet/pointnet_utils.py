@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.autograd import Variable
-from models.pointcloud_utils import *
+from models.model_utils import *
 
 
 class PointMLPNd(nn.Module):

@@ -1,13 +1,15 @@
 import os
-import sys
+import numpy as np
 import torch
-import torch.optim as optim
 from datasets import build_dataset_from_cfg
 from models import build_model_from_cfg
 from losses import build_criterion_from_cfg
-from utils.logger import *
-from utils.misc import *
-from timm.scheduler import CosineLRScheduler
+from optimizers import build_optimizer_from_cfg
+from schedulers import build_scheduler_from_cfg
+
+
+def worker_init_fn(worker_id):
+    np.random.seed(np.random.get_state()[1][0] + worker_id)
 
 
 def build_dataset(args, cfgs):
@@ -34,65 +36,58 @@ def build_criterion(cfgs):
 
 
 def build_optimizer(cfgs, model):
-    # optimizer = build_optimizer_from_cfg(cfgs, model)
-    # return optimizer
-
-    opti_config = cfgs.optimizer
-    if opti_config.type == 'AdamW':
-        def add_weight_decay(model, weight_decay=1e-5, skip_list=()):
-            decay = []
-            no_decay = []
-            for name, param in model.named_parameters():
-                if not param.requires_grad:
-                    continue  # frozen weights
-                if len(param.shape) == 1 or name.endswith(".bias") or 'token' in name or name in skip_list:
-                    # print(name)
-                    no_decay.append(param)
-                else:
-                    decay.append(param)
-            return [
-                {'params': no_decay, 'weight_decay': 0.},
-                {'params': decay, 'weight_decay': weight_decay}]
-        param_groups = add_weight_decay(model, weight_decay=opti_config.kwargs.weight_decay)
-        optimizer = optim.AdamW(param_groups, **opti_config.kwargs)
-    elif opti_config.type == 'Adam':
-        optimizer = optim.Adam(model.parameters(), **opti_config.kwargs)
-    elif opti_config.type == 'SGD':
-        optimizer = optim.SGD(model.parameters(), nesterov=True, **opti_config.kwargs)
-    else:
-        raise NotImplementedError()
+    optimizer = build_optimizer_from_cfg(model, cfgs.name, cfgs.lr, **cfgs.kwargs)
     return optimizer
 
 
-def build_scheduler(cfgs, model, optimizer):
-
-    # scheduler = build_scheduler_from_cfg(cfgs, model, optimizer)
-    # return scheduler
-
-    sche_config = cfgs.scheduler
-    if sche_config.type == 'LambdaLR':
-        scheduler = build_lambda_sche(optimizer, sche_config.kwargs)  # misc.py
-    elif sche_config.type == 'CosLR':
-        scheduler = CosineLRScheduler(optimizer,
-                t_initial=sche_config.kwargs.epochs,
-                t_mul=1,
-                lr_min=1e-6,
-                decay_rate=0.1,
-                warmup_lr_init=1e-6,
-                warmup_t=sche_config.kwargs.initial_epochs,
-                cycle_limit=1,
-                t_in_epochs=True)
-    elif sche_config.type == 'StepLR':
-        scheduler = torch.optim.lr_scheduler.StepLR(optimizer, **sche_config.kwargs)
-    elif sche_config.type == 'function':
-        scheduler = None
-    else:
-        raise NotImplementedError()
-    
-    if cfgs.get('bnmscheduler') is not None:
-        bnsche_config = cfgs.bnmscheduler
-        if bnsche_config.type == 'Lambda':
-            bnscheduler = build_lambda_bnsche(model, bnsche_config.kwargs)  # misc.py
-        scheduler = [scheduler, bnscheduler]
-    
+def build_scheduler(cfgs, optimizer):
+    scheduler = build_scheduler_from_cfg(cfgs, optimizer)
     return scheduler
+
+
+def save_checkpoint(ckpt_path, epoch_idx, model, optimizer, scheduler, metrics, logger):
+    torch.save({
+        'epoch': epoch_idx,
+        'model': model.state_dict(),
+        'optimizer': optimizer.state_dict(),
+        'scheduler': None if scheduler is None else scheduler.state_dict(),
+        'metrics': metrics,
+        }, ckpt_path)
+    logger.info(f'[Checkpoint] Save checkpoint at {ckpt_path}')
+
+
+def load_checkpoint(ckpt_path, model, logger):
+    if not os.path.exists(ckpt_path):
+        raise NotImplementedError(f'[Checkpoint] No checkpoint file from path {ckpt_path}...')
+        
+    # load state dict
+    state_dict = torch.load(ckpt_path, map_location='cpu')
+
+    epoch_idx = state_dict['epoch']
+    model.load_state_dict(state_dict['model'])
+
+    return epoch_idx
+
+def resume_checkpoint(ckpt_path, cfgs, model, optimizer, scheduler, logger):
+    ckpt_path = ckpt_path if cfgs.ckpt_path is None else cfgs.ckpt_path
+    if not os.path.exists(ckpt_path):
+        raise NotImplementedError(f'[Checkpoint] No checkpoint file from path {ckpt_path}...')
+
+    # load state dict
+    logger.info(f'[Resume] loading checkpoint {ckpt_path}')
+    ckpt = torch.load(ckpt_path, map_location='cpu')
+    cfgs.start_epoch = ckpt['epoch']
+    model.load_state_dict(ckpt['model'])
+    if optimizer is not None:
+        try:
+            optimizer.load_state_dict(ckpt['optimizer'])
+        except:
+            logger.info('optimizer does not match')
+    if scheduler is not None:
+        try:
+            scheduler.load_state_dict(ckpt['scheduler'])
+        except:
+            logger.info('scheduler does not match')
+    metrics = ckpt['metrics']
+
+    return cfgs.start_epoch, metrics
