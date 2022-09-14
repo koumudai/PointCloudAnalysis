@@ -14,7 +14,6 @@ from models.PointNet2.pointnet_sem_seg_msg import PointNet2SemSegMsg
 from models.DGCNN.dgcnn_cls import DGCNNCls
 from models.DGCNN.dgcnn_part_seg import DGCNNPartSeg
 from models.DGCNN.dgcnn_sem_seg import DGCNNSemSeg
-# PointTransformer
-from models.PointTransformer.pointtransformer_cls import PointTransformerCls
-
+# # PointTransformer
+# from models.PointTransformer.pointtransformer_cls import PointTransformerCls
 # AdaptConv

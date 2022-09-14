@@ -69,7 +69,7 @@ def ball_points(coord_all, coord_group, k_group, radius):
     group_idx[sqrdists > radius ** 2] = n_p
     group_idx = group_idx.sort(dim=-1)[0][:, :, :k_group]
     group_first = group_idx[:, :, 0].view(b_s, n_g, 1).repeat([1, 1, k_group])
-    mask = group_idx == n_p
+    mask = (group_idx == n_p)
     group_idx[mask] = group_first[mask]
     return group_idx
 
@@ -139,6 +139,6 @@ def pointnet_sampling_all(feature, coord):
         coord_ce    : sampled point cloud coordinate data,  [batch_size, 1, d_coord]
     '''
     b_s, _, d_c = coord.shape
-    feature_ne = coord.unsqueeze(1) if feature is None else torch.cat([feature.unsqueeze(1), coord.unsqueeze(1)], dim=-1)
+    feature_ne = coord.unsqueeze(1) if feature is None else torch.cat([feature, coord], dim=-1).unsqueeze(1)
     coord_ce = torch.zeros((b_s, 1, d_c), device=coord.device)
     return feature_ne, coord_ce

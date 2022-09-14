@@ -1,7 +1,11 @@
 '''
-https://arxiv.org/abs/1612.00593
-PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
+Paper Name                  : PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
+Arxiv                       : https://arxiv.org/abs/1612.00593
+Official Implementation     : https://github.com/charlesq34/pointnet
+Third Party Implementation  : https://github.com/yanx27/Pointnet_Pointnet2_pytorch
+Third Party Implementation  : https://github.com/koumudai/PointCloudAnalysis/tree/master/Code/models/PointNet
 '''
+
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -9,33 +13,34 @@ from torch.autograd import Variable
 from models.model_utils import *
 
 
+class NormAct(nn.Module):
+    def __init__(self, d_in, dim, use_act=True):
+        super().__init__()
+        assert dim in [0, 1, 2]
+        self.norm = nn.BatchNorm2d(d_in) if dim == 2 else nn.BatchNorm1d(d_in)
+        self.act = nn.LeakyReLU(negative_slope=0.2) if use_act else nn.Identity()
+
+    def forward(self, x):
+        return self.act(self.norm(x))
+
+
 class PointMLPNd(nn.Module):
     def __init__(self, d_in, d_out, bias=True, dim=1, use_act=True):
         super().__init__()
-        block = []
+        assert dim in [0, 1, 2]
         if dim == 0:
-            block.extend([
-                nn.Linear(d_in, d_out, bias=bias),
-                nn.BatchNorm1d(d_out)
-            ])
+            self.mlp = nn.Linear(d_in, d_out, bias=bias)
         elif dim == 1:
-            block.extend([
-                nn.Conv1d(d_in, d_out, kernel_size=1, bias=bias),
-                nn.BatchNorm1d(d_out)
-            ])
+            self.mlp = nn.Conv1d(d_in, d_out, kernel_size=1, bias=bias)
         elif dim == 2:
-            block.extend([
-                nn.Conv2d(d_in, d_out, kernel_size=1, bias=bias),
-                nn.BatchNorm2d(d_out)
-            ])
+            self.mlp = nn.Conv2d(d_in, d_out, kernel_size=1, bias=bias)
         else:
             raise NotImplementedError()
-        if use_act:
-            block.append(nn.ReLU())
-        self.mlp = nn.Sequential(*block)
+
+        self.norm_act = NormAct(d_out, dim=dim, use_act=use_act)
 
     def forward(self, x):
-        return self.mlp(x)
+        return self.norm_act(self.mlp(x))
 
 
 class PointMaxPool(nn.Module):

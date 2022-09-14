@@ -17,6 +17,10 @@ def get_args_and_cfgs():
     parser.add_argument('--seed', type=int, default=-1, help='random seed')
     parser.add_argument('--deterministic', action='store_true', default=False, help='whether to set deterministic options for CUDNN backend.')
     # some args
+    parser.add_argument('--class_choice', type=str, default=None, metavar='N',
+                        choices=['airplane', 'bag', 'cap', 'car', 'chair',
+                                 'earphone', 'guitar', 'knife', 'lamp', 'laptop', 
+                                 'motor', 'mug', 'pistol', 'rocket', 'skateboard', 'table'])
     parser.add_argument('--exp_name', type=str, default='default', help='experiment name')
     parser.add_argument('--test', action='store_true', default=False, help='test mode for certain ckpt')
     parser.add_argument('--resume', action='store_true', default=False, help='autoresume training (interrupted by accident)')
@@ -67,8 +71,13 @@ def get_args_and_cfgs():
     cfgs.dataset.train.bs = args.bs_train if args.bs_train != 0 else cfgs.bs_train
     cfgs.dataset.valid.bs = args.bs_valid if args.bs_valid != 0 else cfgs.bs_valid
     cfgs.dataset.test.bs = args.bs_test if args.bs_test != 0 else cfgs.bs_test
+    # class_choice
+    cfgs.dataset.train.class_choice = args.class_choice
+    cfgs.dataset.valid.class_choice = args.class_choice
+    cfgs.dataset.test.class_choice = args.class_choice
+    # n_seg    
+    cfgs.model.n_seg = cfgs.dataset.train.seg_num[cfgs.dataset.train.cat2id[args.class_choice]] if args.class_choice else sum(cfgs.dataset.train.seg_num)
     # lr
     cfgs.scheduler.lr = cfgs.optimizer.lr
-
     return args, cfgs
 

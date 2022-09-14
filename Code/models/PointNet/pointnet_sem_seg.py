@@ -1,6 +1,9 @@
 '''
-https://arxiv.org/abs/1612.00593
-PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
+Paper Name                  : PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
+Arxiv                       : https://arxiv.org/abs/1612.00593
+Official Implementation     : https://github.com/charlesq34/pointnet
+Third Party Implementation  : https://github.com/yanx27/Pointnet_Pointnet2_pytorch
+Third Party Implementation  : https://github.com/koumudai/PointCloudAnalysis/tree/master/Code/models/PointNet
 '''
 import torch
 import torch.nn as nn

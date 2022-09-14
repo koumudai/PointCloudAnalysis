@@ -1,3 +1,10 @@
+'''
+Paper Name                  : PointNet: PointNet++: Deep Hierarchical Feature Learning on Point Sets in a Metric Space
+Arxiv                       : https://arxiv.org/abs/1706.02413
+Official Implementation     : https://github.com/charlesq34/pointnet2
+Third Party Implementation  : https://github.com/yanx27/Pointnet_Pointnet2_pytorch
+Third Party Implementation  : https://github.com/koumudai/PointCloudAnalysis/tree/master/Code/models/PointNet2
+'''
 import torch
 import torch.nn as nn
 import torch.nn.functional as F

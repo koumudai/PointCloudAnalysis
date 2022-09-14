@@ -1,6 +1,9 @@
 '''
-https://arxiv.org/abs/1612.00593
-PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
+Paper Name                  : PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
+Arxiv                       : https://arxiv.org/abs/1612.00593
+Official Implementation     : https://github.com/charlesq34/pointnet
+Third Party Implementation  : https://github.com/yanx27/Pointnet_Pointnet2_pytorch
+Third Party Implementation  : https://github.com/koumudai/PointCloudAnalysis/tree/master/Code/models/PointNet
 '''
 import torch
 import torch.nn as nn
@@ -11,14 +14,11 @@ from models.build import MODELS
 
 @MODELS.register_module()
 class PointNetPartSeg(nn.Module):
-    def __init__(self, config):
+    def __init__(self, cfgs):
         super().__init__()
-        self.n_class = config.model.n_class
-        self.use_normals = config.model.use_normals
-        super().__init__()
-        channel = 6 if self.use_normals else 3
-        self.stn = TransformNet(channel, 3)
-        self.mlp1 = PointMLPNd(channel, 64, dim=1)
+        self.n_seg = cfgs.n_seg
+        self.stn = TransformNet(3, 3)
+        self.mlp1 = PointMLPNd(3, 64, dim=1)
         self.mlp2 = PointMLPNd(64, 128, dim=1)
         self.mlp3 = PointMLPNd(128, 128, dim=1)
         self.mlp4 = PointMLPNd(128, 512, dim=1)
@@ -28,7 +28,7 @@ class PointNetPartSeg(nn.Module):
             PointMLPNd(4944, 256, dim=1),
             PointMLPNd(256, 256, dim=1),
             PointMLPNd(256, 128, dim=1),
-            nn.Conv1d(128, self.n_class, 1),
+            nn.Conv1d(128, self.n_seg, 1),
             nn.LogSoftmax(dim=1)
         )
 
@@ -50,9 +50,8 @@ class PointNetPartSeg(nn.Module):
         x4 = self.mlp4(x)
         x5 = self.mlp5(x4)
         x6 = x5.max(dim=-1, keepdim=False)[0]
-        x6 = torch.cat([x6, l.unsqueeze(1)], dim=1)
+        x6 = torch.cat([x6, l], dim=1)
         x6 = x6.view(-1, 2048+16, 1).repeat(1, 1, N)
         x = torch.cat([x1, x2, x3, x4, x5, x6], 1)
         x = self.head(x)
-        x = x.transpose(2, 1).contiguous()
-        return x, trans_feat
+        return x, {'trans_feat': trans_feat}

@@ -1,17 +1,45 @@
 '''
-Paper: https://arxiv.org/abs/1406.5670
+Paper Name                  : 3D ShapeNets: A Deep Representation for Volumetric Shapes
+Arxiv                       : Paper: https://arxiv.org/abs/1406.5670
 '''
 import os
 import h5py
-import json
-import torch
-import pickle
+import glob
 import numpy as np
-from tqdm import tqdm
 from torch.utils.data import Dataset
 from datasets.build import DATASETS
 from utils.logger import *
 from datasets.dataset_utils import *
+
+
+def download_modelnet40(pc_path, path_name='modelnet40_2048'):
+    if not os.path.exists(pc_path):
+        os.mkdir(pc_path)
+    if not os.path.exists(f'{pc_path}/{path_name}'):
+        www = 'https://shapenet.cs.stanford.edu/media/modelnet40_ply_hdf5_2048.zip'
+        zipfile = os.path.basename(www)
+        os.system(f'wget {www} --no-check-certificate')
+        os.system(f'unzip {zipfile}')
+        os.system(f'mv {zipfile[:-4]} {pc_path}/{path_name}')
+        # os.system(f'rm {zipfile}')
+
+
+def load_modelnet(pc_path, subset, path_name='modelnet40_2048'):
+    assert subset in ['train', 'test']
+    download_modelnet40(pc_path)
+    file_paths = glob.glob(f'{pc_path}/{path_name}/*{subset}*.h5')
+
+    all_data, all_label = [], []
+    for path in file_paths:
+        f = h5py.File(path, 'r+')
+        data = f['data'][:].astype('float32')
+        label = f['label'][:].astype('int64')
+        f.close()
+        all_data.append(data)
+        all_label.append(label)
+    all_data = np.concatenate(all_data, axis=0)
+    all_label = np.concatenate(all_label, axis=0)
+    return all_data, all_label
 
 
 class _ModelNet_XX(Dataset):
@@ -19,95 +47,46 @@ class _ModelNet_XX(Dataset):
         super(_ModelNet_XX, self).__init__()
         assert dataset_name in ['ModelNet10', 'ModelNet40'], 'dataset_name error'
         assert logger in ['ModelNet10', 'ModelNet40'], 'logger error'
-        self.dataset_path = cfgs.dataset_path
-        self.pc_paths = cfgs.pointcloud_path
-        self.n_point_all = cfgs.n_point_all
-        self.n_class = cfgs.n_class
+        if dataset_name != 'ModelNet40':
+            raise NotImplementedError()
+        self.pc_path = cfgs.pointcloud_path
         self.subset = cfgs.subset
-        self.use_normals = cfgs.use_normals
-        self.uniform = True
-        self.process_data = True
         assert self.subset in ['train', 'test']
-        self.class_file = f'{self.dataset_path}/{dataset_name}_shape_names.txt'
-        self.class_names = [line.rstrip() for line in open(self.class_file)]
-        self.class_dict = dict(zip(self.class_names, range(len(self.class_names))))
+        self.n_point = cfgs.n_point
+        self.n_class = cfgs.n_class
+        self.class_names = cfgs.cat2id.keys()
+        self.data, self.label = load_modelnet(self.pc_path, self.subset)
 
-        pc_ids = {}
-        pc_ids['train'] = [line.rstrip() for line in open(f'{self.dataset_path}/{dataset_name}_train.txt')]
-        pc_ids['test'] = [line.rstrip() for line in open(f'{self.dataset_path}/{dataset_name}_test.txt')]
-
-        pc_names = ['_'.join(x.split('_')[0:-1]) for x in pc_ids[self.subset]]
-        self.pc_paths = [(pc_name, f'{self.pc_paths}/{pc_name}/{pc_id}.txt') for pc_name, pc_id in zip(pc_names, pc_ids[self.subset])]
-        print_log(f'[DATASET] The size of {self.subset} data is {len(self.pc_paths)}', logger=logger)
-
-        if self.uniform:
-            self.save_path = f'{self.dataset_path}/{dataset_name}_{self.subset}_{self.n_point_all}pts_fps.dat'
-        else:
-            self.save_path = f'{self.dataset_path}/{dataset_name}_{self.subset}_{self.n_point_all}pts.dat'
-
-        if self.process_data:
-            if not os.path.exists(self.save_path):
-                print_log(f'[DATASET] Processing data {self.save_path} (only running in the first time)...', logger=logger)
-                self.list_of_points = [None] * len(self.pc_paths)
-                self.list_of_labels = [None] * len(self.pc_paths)
-
-                for idx in tqdm(range(len(self.pc_paths)), total=len(self.pc_paths)):
-                    fn = self.pc_paths[idx]
-                    label = np.array([self.class_dict[fn[0]]]).astype(np.int32)
-                    points = np.loadtxt(fn[1], delimiter=',').astype(np.float32)
-
-                    if self.uniform:
-                        points = farthest_point_sample(points, self.n_point_all)
-                    else:
-                        points = points[0:self.n_point_all, :]
-
-                    self.list_of_points[idx] = points
-                    self.list_of_labels[idx] = label
-
-                with open(self.save_path, 'wb') as f:
-                    pickle.dump([self.list_of_points, self.list_of_labels], f)
-            else:
-                print_log(f'[DATASET] Load processed data from {self.save_path}...', logger=logger)
-                with open(self.save_path, 'rb') as f:
-                    self.list_of_points, self.list_of_labels = pickle.load(f)
+    def __getitem__(self, item):
+        points = self.data[item][:self.n_point]
+        label = self.label[item]
+        if self.subset == 'train':
+            points = translate_pointcloud(points)
+            indices = list(range(points.shape[0]))
+            np.random.shuffle(indices)
+            points = points[indices]
+        return points, label
 
     def __len__(self):
-        return len(self.pc_paths)
-
-    def __getitem__(self, idx):
-        if self.process_data:
-            points, label = self.list_of_points[idx], self.list_of_labels[idx]
-        else:
-            fn = self.pc_paths[idx]
-            label = np.array([self.class_dict[fn[0]]]).astype(np.int32)
-            points = np.loadtxt(fn[1], delimiter=',').astype(np.float32)
-
-            if self.uniform:
-                points = farthest_point_sample(points, self.n_point_all)
-            else:
-                points = points[0:self.n_point_all, :]
-                
-        points[:, 0:3] = pc_normalize(points[:, 0:3])
-        if not self.use_normals:
-            points = points[:, 0:3]
-
-        pt_idxs = np.arange(0, points.shape[0])   # n_point_all
-        if self.subset == 'train':
-            np.random.shuffle(pt_idxs)
-        points = torch.from_numpy(points[pt_idxs].copy()).float()
-
-        feature, coord, label = points, points[:, :3], label[0]
-
-        return feature, coord, label
+        return self.data.shape[0]
 
 
 @DATASETS.register_module()
 class ModelNet10(_ModelNet_XX):
-    def __init__(self, config):
-        super(ModelNet10, self).__init__(config, 'ModelNet10', 'ModelNet10')
+    def __init__(self, cfgs):
+        super(ModelNet10, self).__init__(cfgs, 'ModelNet10', 'ModelNet10')
 
 
 @DATASETS.register_module()
 class ModelNet40(_ModelNet_XX):
-    def __init__(self, config):
-        super(ModelNet40, self).__init__(config, 'ModelNet40', 'ModelNet40')
+    def __init__(self, cfgs):
+        super(ModelNet40, self).__init__(cfgs, 'ModelNet40', 'ModelNet40')
+
+
+# if __name__ == '__main__':
+#     class Config:
+#         def __init__(self):
+#             self.pointcloud_path = 'data/ModelNet40'
+#             self.subset = 'test'
+    
+#     x = ModelNet40(Config())

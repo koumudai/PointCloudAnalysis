@@ -72,6 +72,11 @@ def set_random_seed(seed, deterministic=False):
         torch.backends.cudnn.benchmark = False
 
 
+def cal_model_parm_nums(model):
+    total = sum([param.nelement() for param in model.parameters()])
+    return total
+
+
 # def is_seq_of(seq, expected_type, seq_type=None):
 #     """Check whether it is a sequence of some type.
 #     Args:

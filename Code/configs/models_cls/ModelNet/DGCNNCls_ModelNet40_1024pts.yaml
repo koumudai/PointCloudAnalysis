@@ -1,0 +1,45 @@
+bs_train: 16
+bs_valid: 16
+bs_test: 32
+max_epoch: 200
+
+dataset:
+  name: ModelNet40
+  train:
+    _base_: configs/datasets/ModelNet/ModelNet40_1024pts.yaml
+    subset: train
+  valid:
+    _base_: configs/datasets/ModelNet/ModelNet40_1024pts.yaml
+    subset: test
+  test:
+    _base_: configs/datasets/ModelNet/ModelNet40_1024pts.yaml
+    subset: test
+
+model:
+  name: DGCNNCls
+  n_class: 40
+  n_point: 1024
+  k_point: 20
+  d_embed: 1024
+  dropout: 0.5
+  use_normals: False
+
+loss:
+  name: DGCNNLoss
+  smoothing: True
+
+optimizer: # Unified with timm
+  opt: adamw
+  lr: 5.0e-4
+  weight_decay: 5.0e-2
+
+scheduler: # Unified with timm
+  sched: cosine
+  epochs: 200
+  min_lr: 1.0e-6
+  decay_rate: 0.1
+  warmup_lr: 1.0e-6
+  warmup_epochs: 10
+  cooldown_epochs: 0
+
+

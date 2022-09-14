@@ -2,9 +2,9 @@
 
 ## 缩写
 
-- `cls`:
-- `part_seg`:
-- `sem_seg`:
+- `cls`: Classification.
+- `part_seg`: Part Segmentation.
+- `sem_seg`: Semantic Segmentation.
 
 ## 数据集
 
@@ -16,7 +16,7 @@
 
 ## 模型
 
-- `PointNet`:
+- `PointNet`: 
 - `PointNet++`(`PointNet2`):
 - `DGCNN`:
 - `PointTransformer`:
@@ -31,27 +31,29 @@
 - `datasets`: 存放 `Dataset` 类.
 - `models`: 存放 `Model` 类.
 - `losses`: 存放 `Loss` 类.
-- `optimizers`: 存放 `Optimizer` 类.
-- `schedulers`: 存放 `Scheduler` 类
-- `tools`: 存放 `runner` 和 `builder` 函数.
-- `utils`: 存放一些重要的函数.
+- `managers`: 存放 `Manager` 类.
+- `parsers`: 存放 `parser` 函数.
 - `main`: 存放 `main` 函数.
+- `utils`: 存放一些重要的函数.
 
 ### 全部框架
 
 - `configs`: 存放数据集或模型的配置信息, 配置信息格式为 `yaml`.
-  - `datasets`: 存放数据集的配置信息, 其下文件夹命名规范为 `datasets_{dataset_base_name}`.
-    - `datasets_ModelNet`: 存放与数据集 `ModelNet` 相关的配置信息.
-    - `datasets_ScanObjectNN`: 存放与数据集 `ScanObjectNN` 相关的配置信息.
-    - `datasets_ShapeNet_55_34`: 存放与数据集 `ShapeNet_55_34` 相关的配置信息.
-  - `models_cls`: 存放与 `cls` 任务相关的模型配置信息, 其下文件夹命名规范为 `models_{dataset_base_name}`.
-    - `models_ModelNet`: 存放与 `ModelNet` 数据集相关的模型配置信息, 其下文件夹命名规范为 `{model_name}_{dataset_name}_{n_point}pts.yaml`.
-      - `DGCNN_ModelNet40_1024pts.yaml`:
-    - `models_ScanObjectNN`:
-    - `models_ShapeNet_55_34`:
-  - `models_part_seg`: 存放与 `part_seg` 任务相关的模型配置信息, 其下文件夹命名规范为 `models_{dataset_base_name}`.
+  - `datasets`: 存放数据集的配置信息, 其下文件夹命名规范为 `{dataset_base_name}`.
+    - `ModelNet`: 存放与数据集 `ModelNet` 相关的配置信息.
+    - `ScanObjectNN`: 存放与数据集 `ScanObjectNN` 相关的配置信息.
+    - `ShapeNet_55_34`: 存放与数据集 `ShapeNet_55_34` 相关的配置信息.
+  - `models_cls`: 存放与 `cls` 任务相关的模型配置信息, 其下文件夹命名规范为 `{dataset_base_name}`.
+    - `ModelNet`: 存放与 `ModelNet` 数据集相关的模型配置信息, 其下文件夹命名规范为 `{model_name}_{dataset_name}_{n_point}pts.yaml`.
+      - `PointNetCls_ModelNet40_1024pts.yaml`: 模型为 PointNetCls, 数据集为 ModelNet40, 点云数 1024.
+      - `PointNet2ClsSsg_ModelNet40_1024pts.yaml`: 模型为 PointNet2ClsSsg, 数据集为 ModelNet40, 点云数 1024.
+      - `PointNet2ClsMsg_ModelNet40_1024pts.yaml`: 模型为 PointNet2ClsMsg, 数据集为 ModelNet40, 点云数 1024.
+      - `DGCNNCls_ModelNet40_1024pts.yaml`: 模型为 DGCNNCls, 数据集为 ModelNet40, 点云数 1024.
+    - `ScanObjectNN`: 存放与 `ScanObjectNN` 数据集相关的模型配置信息, 其下文件夹命名规范为 `{model_name}_{dataset_name}_{n_point}pts.yaml`.
+    - `ShapeNet_55_34`: 存放与 `ShapeNet_55_34` 数据集相关的模型配置信息, 其下文件夹命名规范为 `{model_name}_{dataset_name}_{n_point}pts.yaml`.
+  - `models_part_seg`: 存放与 `part_seg` 任务相关的模型配置信息, 其下文件夹命名规范为 `{dataset_base_name}`.
     - `models_ShapeNet`:
-  - `models_sem_seg`: 存放与 `sem_seg` 任务相关的模型配置信息, 其下文件夹命名规范为 `models_{dataset_base_name}`.
+  - `models_sem_seg`: 存放与 `sem_seg` 任务相关的模型配置信息, 其下文件夹命名规范为 `{dataset_base_name}`.
     - `models_S3DIS`:
 - `data`: 存放数据集
   - `ModelNet`: 存放 `ModelNet` 数据集的信息.
@@ -121,13 +123,12 @@
   - `PointNet2`:
     - `PointNet2Loss.py`
   - `DGCNN`:
-  - `PointTransformer`:
-  - `AdaptConv`:
-- `optimizers`:
-- `scheduler`:
-- `tools`:
+    - `DGCNNLoss.py`
+- `managers`:
   - `__init__.py`:
   - `build.py`:
+- `parsers`:
+  
 - `utils`:
 - `main`:
   - `main_cls.py`:
@@ -161,18 +162,14 @@ conda install pytorch==1.11.0 torchvision==0.12.0 torchaudio==0.11.0 cudatoolkit
 pip install -r requirements.txt
 ```
 
+## Acknowledgement
+
+Our codes are built upon Point-BERT, Point-MAE, PointNext
+
 ## References
 
 [1] [PointNet](https://arxiv.org/abs/1612.00593)
-
-
-
-```yaml
-args:
-  cfg_file: str
-  use_gpu: True
-  gpu: 4, 5, 6, 7
-  num_workers: 8
-  seed: 0
-
-```
+[2] [PointNet++](https://arxiv.org/abs/1706.02413)
+[3] [DGCNN](https://arxiv.org/abs/1801.07829)
+[4] [AdaptConv](https://arxiv.org/abs/2108.08035)
+[5] [PointTransformer](https://arxiv.org/abs/2012.09164)

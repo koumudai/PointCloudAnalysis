@@ -1,35 +1,44 @@
+'''
+Paper Name                  : PointNet: PointNet++: Deep Hierarchical Feature Learning on Point Sets in a Metric Space
+Arxiv                       : https://arxiv.org/abs/1706.02413
+Official Implementation     : https://github.com/charlesq34/pointnet2
+Third Party Implementation  : https://github.com/yanx27/Pointnet_Pointnet2_pytorch
+Third Party Implementation  : https://github.com/koumudai/PointCloudAnalysis/tree/master/Code/models/PointNet2
+'''
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from models.model_utils import *
 
 
+class NormAct(nn.Module):
+    def __init__(self, d_in, dim):
+        super().__init__()
+        assert dim in [0, 1, 2]
+        self.norm = nn.BatchNorm2d(d_in) if dim == 2 else nn.BatchNorm1d(d_in)
+        self.act = nn.ReLU()
+
+    def forward(self, x):
+        return self.act(self.norm(x))
+
+
 class PointMLPNd(nn.Module):
     def __init__(self, d_in, d_out, bias=True, dim=1):
         super().__init__()
+        assert dim in [0, 1, 2]
         if dim == 0:
-            self.mlp = nn.Sequential(
-                nn.Linear(d_in, d_out, bias=bias),
-                nn.BatchNorm1d(d_out),
-                nn.ReLU()
-            )
+            self.mlp = nn.Linear(d_in, d_out, bias=bias)
         elif dim == 1:
-            self.mlp = nn.Sequential(
-                nn.Conv1d(d_in, d_out, kernel_size=1, bias=bias),
-                nn.BatchNorm1d(d_out),
-                nn.ReLU()
-            )
+            self.mlp = nn.Conv1d(d_in, d_out, kernel_size=1, bias=bias)
         elif dim == 2:
-            self.mlp = nn.Sequential(
-                nn.Conv2d(d_in, d_out, kernel_size=1, bias=bias),
-                nn.BatchNorm2d(d_out),
-                nn.ReLU()
-            )
+            self.mlp = nn.Conv2d(d_in, d_out, kernel_size=1, bias=bias)
         else:
             raise NotImplementedError()
 
+        self.norm_act = NormAct(d_out, dim=dim)
+
     def forward(self, x):
-        return self.mlp(x)
+        return self.norm_act(self.mlp(x))
 
 
 class PointMaxPool(nn.Module):
@@ -65,7 +74,7 @@ class PointNetSetAbstractionSsg(nn.Module):
         block.append(PointMaxPool(dim=-1))
         self.mlp = nn.Sequential(*block)
 
-    def forward(self, feature, coord):
+    def forward(self, x, z):
         """
         Input:
             feature     : point cloud feature data,             [batch_size, d_in, n_point]
@@ -74,12 +83,12 @@ class PointNetSetAbstractionSsg(nn.Module):
             feature     : sampled point cloud feature data,     [batch_size, d_out, n_group]
             coord       : sampled point cloud coordinate data,  [batch_size, d_coord, n_group]
         """
-        feature = None if feature is None else feature.permute(0, 2, 1)
-        coord = coord.permute(0, 2, 1)
-        feature, coord = pointnet_sampling_all(feature, coord) if self.group_all else pointnet_sampling_ball(feature, coord, self.n_group, self.k_group, self.radius)
-        feature = self.mlp(feature.permute(0, 3, 1, 2))
-        coord = coord.permute(0, 2, 1)
-        return feature, coord
+        x = None if x is None else x.permute(0, 2, 1)
+        z = z.permute(0, 2, 1)
+        x, z = pointnet_sampling_all(x, z) if self.group_all else pointnet_sampling_ball(x, z, self.n_group, self.k_group, self.radius)
+        x = self.mlp(x.permute(0, 3, 1, 2))
+        z = z.permute(0, 2, 1)
+        return x, z
 
 
 class PointNetSetAbstractionMsg(nn.Module):

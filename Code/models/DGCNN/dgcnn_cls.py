@@ -1,8 +1,9 @@
 '''
 Paper Name                  : Dynamic Graph CNN for Learning on Point Clouds
-Paper Id                    : https://arxiv.org/abs/1801.07829
+Arxiv                       : https://arxiv.org/abs/1801.07829
 Official Implementation     : https://github.com/WangYueFt/dgcnn
-Unofficial Implementation   : https://github.com/antao97/dgcnn.pytorch
+Third Party Implementation  : https://github.com/antao97/dgcnn.pytorch
+Third Party Implementation  : https://github.com/koumudai/PointCloudAnalysis/tree/master/Code/models/DGCNN
 '''
 import torch
 import torch.nn as nn
@@ -14,15 +15,14 @@ from models.build import MODELS
 
 @MODELS.register_module()
 class DGCNNCls(nn.Module):
-    def __init__(self, config):
+    def __init__(self, cfgs):
         super().__init__()
-        self.n_class = config.n_class
-        self.n_point = config.n_point
-        self.k_point = config.k_point
+        self.n_class = cfgs.n_class
+        self.n_point = cfgs.n_point
+        self.k_point = cfgs.k_point
         self.n_block = 4
-        self.d_embed = config.d_embed
-        self.dropout = config.dropout
-
+        self.d_embed = cfgs.d_embed
+        self.dropout = cfgs.dropout
         self.dgcnn_blocks = nn.ModuleList([
             DGCNNBlock([3*2, 64], self.k_point),
             DGCNNBlock([64*2, 64], self.k_point),
@@ -50,4 +50,4 @@ class DGCNNCls(nn.Module):
         x = self.mlp(x)                                             # (batch_size, d_embed, n_point)
         x = torch.cat((self.maxpool(x), self.avgpool(x)), dim=1)    # (batch_size, d_embed*2)
         x = self.head(x)                                            # (batch_size, n_class)
-        return x
+        return x, {}

@@ -1,3 +1,16 @@
+# DataSet
+
+ModelNet: pointnet
+
+
+
+
+
+
+
+
+
+
 ## Dataset 
 The overall directory structure should be:
 

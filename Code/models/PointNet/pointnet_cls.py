@@ -1,6 +1,9 @@
 '''
-https://arxiv.org/abs/1612.00593
-PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
+Paper Name                  : PointNet: Deep Learning on Point Sets for 3D Classification and Segmentation
+Arxiv                       : https://arxiv.org/abs/1612.00593
+Official Implementation     : https://github.com/charlesq34/pointnet
+Third Party Implementation  : https://github.com/yanx27/Pointnet_Pointnet2_pytorch
+Third Party Implementation  : https://github.com/koumudai/PointCloudAnalysis/tree/master/Code/models/PointNet
 '''
 import torch
 import torch.nn as nn
@@ -11,12 +14,10 @@ from models.build import MODELS
 
 @MODELS.register_module()
 class PointNetCls(nn.Module):
-    def __init__(self, config):
+    def __init__(self, cfgs):
         super().__init__()
-        self.n_class = config.n_class
-        self.use_normals = config.use_normals
-        channel = 6 if self.use_normals else 3
-        self.feat = PointNetEncoder(global_feat=True, feature_transform=True, channel=channel)
+        self.n_class = cfgs.n_class
+        self.encoder = PointNetEncoder(global_feat=True, feature_transform=True, channel=3)
         self.head = nn.Sequential(
             nn.Linear(1024, 512),
             nn.BatchNorm1d(512),
@@ -29,7 +30,7 @@ class PointNetCls(nn.Module):
             nn.LogSoftmax(dim=1)
         )
 
-    def forward(self, x, z):
-        x, trans, trans_feat = self.feat(x)
+    def forward(self, x):
+        x, trans, trans_feat = self.encoder(x)
         x = self.head(x)
         return x, {'trans_feat': trans_feat}

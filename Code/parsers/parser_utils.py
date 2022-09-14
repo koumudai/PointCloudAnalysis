@@ -6,6 +6,7 @@ from utils.logger import print_log
 
 
 def log_args_to_file(args, pre='args', logger=None):
+    print(args)
     for key, val in args.__dict__.items():
         print_log(f'{pre}.{key} : {val}', logger=logger)
 
@@ -21,28 +22,27 @@ def log_cfgs_to_file(cfgs, pre='cfgs', logger=None):
 
 def load_yaml(yaml_file):
     with open(yaml_file, 'r') as f:
-        try:
-            ret = yaml.load(f, Loader=yaml.FullLoader)
-        except:
-            ret = yaml.load(f)
-    return ret
+        return yaml.load(f, Loader=yaml.FullLoader)
 
 
-def merge_cfgs(config, new_config):
-    for key, val in new_config.items():
-        if isinstance(val, dict):
-            config[key] = merge_cfgs(EasyDict(), val)
+def merge_cfgs(new_cfgs, old_cfgs):
+    for k, v in old_cfgs.items():
+        if isinstance(v, dict):
+            new_cfgs[k] = merge_cfgs(EasyDict(), v)
         else:
-            if key == '_base_':
-                config[key] = merge_cfgs(EasyDict(), load_yaml(new_config['_base_']))
+            if k in new_cfgs.keys():
+                assert new_cfgs[k] == v, f'the key "{k}" has different value'
+            elif k == '_base_':
+                cfgs = merge_cfgs(EasyDict(), load_yaml(old_cfgs['_base_']))
+                for p, q in cfgs.items():
+                    new_cfgs[p] = q
             else:
-                config[key] = val
-    return config
-
+                new_cfgs[k] = v
+    return new_cfgs
+        
 
 def get_cfgs_from_yaml(yaml_file):
-    config = merge_cfgs(EasyDict(), load_yaml(yaml_file))
-    return config
+    return merge_cfgs(EasyDict(), load_yaml(yaml_file))
 
 
 def get_cfgs(args, logger=None):

@@ -1,53 +1,14 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+from losses.build import LOSSES
 
 
-class get_loss(nn.Module):
-    def __init__(self):
-        super(get_loss, self).__init__()
+@LOSSES.register_module()
+class PointNet2Loss(nn.Module):
+    def __init__(self, cfgs):
+        super().__init__()
 
-    def forward(self, pred, target, trans_feat):
-        total_loss = F.nll_loss(pred, target)
-
-        return total_loss
-
-
-class get_loss(nn.Module):
-    def __init__(self):
-        super(get_loss, self).__init__()
-
-    def forward(self, pred, target, trans_feat):
-        total_loss = F.nll_loss(pred, target)
-
-        return total_loss
-
-
-class get_loss(nn.Module):
-    def __init__(self):
-        super(get_loss, self).__init__()
-
-    def forward(self, pred, target, trans_feat):
-        total_loss = F.nll_loss(pred, target)
-
-        return total_loss
-
-
-class get_loss(nn.Module):
-    def __init__(self):
-        super(get_loss, self).__init__()
-
-    def forward(self, pred, target, trans_feat, weight):
-        total_loss = F.nll_loss(pred, target, weight=weight)
-
-        return total_loss
-
-
-class get_loss(nn.Module):
-    def __init__(self):
-        super(get_loss, self).__init__()
-
-    def forward(self, pred, target, trans_feat, weight):
-        total_loss = F.nll_loss(pred, target, weight=weight)
-
-        return total_loss
+    def forward(self, pred, target, weight=None):
+        loss = F.nll_loss(pred, target, weight=weight)
+        return loss

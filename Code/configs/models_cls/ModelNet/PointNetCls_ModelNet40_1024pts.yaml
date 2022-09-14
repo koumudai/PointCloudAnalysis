@@ -1,0 +1,40 @@
+bs_train: 120
+bs_valid: 120
+bs_test: 120
+max_epoch: 200
+
+dataset:
+  name: ModelNet40
+  train:
+    _base_: configs/datasets/ModelNet/ModelNet40_1024pts.yaml
+    subset: train
+  valid:
+    _base_: configs/datasets/ModelNet/ModelNet40_1024pts.yaml
+    subset: test
+  test:
+    _base_: configs/datasets/ModelNet/ModelNet40_1024pts.yaml
+    subset: test
+
+model:
+  name: PointNetCls
+  n_class: 40
+  n_point: 1024
+  use_normals: False
+
+loss:
+  name: PointNetLoss
+  mat_diff_loss_scale: 0.001
+
+optimizer: # Unified with timm
+  opt: adamw
+  lr: 5.0e-4
+  weight_decay: 5.0e-2
+
+scheduler: # Unified with timm
+  sched: cosine
+  epochs: 200
+  min_lr: 1.0e-6
+  decay_rate: 0.1
+  warmup_lr: 1.0e-6
+  warmup_epochs: 10
+  cooldown_epochs: 0

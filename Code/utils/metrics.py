@@ -1,32 +1,8 @@
-from math import log10
 import numpy as np
 import torch
-from sklearn.metrics import confusion_matrix
-
-
-# def PSNR(mse, peak=1.):
-#     return 10 * log10((peak ** 2) / mse)
-
-
-# class SegMetric:
-#     def __init__(self, values=0.):
-#         assert isinstance(values, dict)
-#         self.miou = values.miou
-#         self.oa = values.get('oa', None) 
-#         self.miou = values.miou
-#         self.miou = values.miou
-
-
-#     def better_than(self, other):
-#         if self.acc > other.acc:
-#             return True
-#         else:
-#             return False
-
-#     def state_dict(self):
-#         _dict = dict()
-#         _dict['acc'] = self.acc
-#         return _dict
+from typing import List
+import numpy as np
+import sklearn.metrics as metrics
 
 
 class AverageMeter(object):
@@ -47,9 +23,8 @@ class AverageMeter(object):
         self.avg = self.sum / self.count
 
 
-class ConfusionMatrix:
+class ConfusionMatrixBase:
     """Accumulate a confusion matrix for a classification task."""
-
     def __init__(self, n_class, ignore_idx=None):
         self.value = 0
         self.n_class = n_class
@@ -125,175 +100,132 @@ class ConfusionMatrix:
         return self.value.sum()
 
     @property
-    def overall_accuray(self):
-        return self.tp.sum() / self.total
+    def overall_accuracy(self):
+        return self.tp.sum() / self.total * 100
+
+    @property
+    def mean_accuracy(self):
+        cls_accs = self.tp / self.count.clamp(min=1)
+        return torch.mean(cls_accs) * 100
 
     @property
     def union(self):
         return self.value.sum(dim=0) + self.value.sum(dim=1) - self.value.diag()
 
-    def all_acc(self):
-        return self.cal_acc(self.tp, self.count)
-
     @staticmethod
     def cal_acc(tp, count):
-        cls_accs = tp / count.clamp(min=1) * 100
-        oa = tp.sum() / count.sum() * 100
+        cls_accs = tp / count.clamp(min=1)
+        oa = tp.sum() / count.sum()
         macc = torch.mean(cls_accs)  # class accuracy
-        return oa.item(), macc.item(), cls_accs.cpu().numpy()
+        return oa.item() * 100, macc.item() * 100, cls_accs.cpu().numpy() * 100
 
-    def all_metrics(self):
+
+class ConfusionMatrixShapeNetPart:
+    def __init__(self, n_cls, n_seg, seg_num_list, index_start):
+        self.n_cls = n_cls
+        self.n_seg = n_seg
+        self.seg_num_list = seg_num_list
+        self.index_start = index_start
+        self.cls_matrix = np.zeros((n_cls, n_cls))
+        self.seg_matrix = [np.zeros((e, e)) for e in seg_num_list] if n_cls != 1 else np.zeros((n_seg, n_seg))
+
+    def __init__(self, n_class, ignore_idx=None):
+        self.value = 0
+        self.n_class = n_class
+        self.n_virtual_class = n_class if ignore_idx is None else n_class + 1
+        self.ignore_idx = ignore_idx
+
+    @torch.no_grad()
+    def update(self, pred, true): 
+        """Update the confusion matrix with the given predictions."""
+        true = true.flatten()
+        pred = pred.flatten()
+        if self.ignore_idx is not None:
+            if (true == self.ignore_idx).sum() > 0:
+                pred[true == self.ignore_idx] = self.n_virtual_class -1 
+                true[true == self.ignore_idx] = self.n_virtual_class -1  
+        unique_mapping = true.flatten() * self.n_virtual_class + pred.flatten()
+        bins = torch.bincount(unique_mapping, minlength=self.n_virtual_class**2)
+        self.value += bins.view(self.n_virtual_class, self.n_virtual_class)[:self.n_class, :self.n_class]
+
+    def cal_metrics(self):
         tp, fp, fn = self.tp, self.fp, self.fn
   
-        cls_ious = tp / (tp + fp + fn).clamp(min=1) * 100
-        cls_accs = tp / self.count.clamp(min=1) * 100
-        oa = tp.sum() / self.total * 100
+        cls_ious = (tp / (tp + fp + fn).clamp(min=1)).cpu().numpy()
+        cls_accs = (tp / self.count.clamp(min=1)).cpu().numpy()
+        oa = tp.sum() / self.total
 
-        miou = torch.mean(cls_ious)
-        macc = torch.mean(cls_accs)  # class accuracy
-        return oa.item(), miou.item(), macc.item(), cls_ious.cpu().numpy(), cls_accs.cpu().numpy()
-
-
-# def get_mious(tp, union, count):
-#     iou_per_cls = tp / union.clamp(min=1) * 100
-#     acc_per_cls = tp / count.clamp(min=1) * 100 
-#     over_all_acc = tp.sum() / count.sum() * 100
-
-#     miou = torch.mean(iou_per_cls)
-#     macc = torch.mean(acc_per_cls)  # class accuracy
-#     return miou.item(), macc.item(), over_all_acc.item(), iou_per_cls.cpu().numpy(), acc_per_cls.cpu().numpy()
+        miou = np.mean(cls_ious)
+        macc = np.mean(cls_accs)  # class accuracy
+        return MetricsShapeNetPart(miou.item() * 100, oa.item() * 100, macc.item() * 100, cls_ious * 100, cls_accs * 100)
 
 
-# def partnet_metrics(num_classes, num_parts, objects, preds, targets):
-#     """
+class MetricsShapeNetPart:
+    def __init__(self, miou=0., oa=0., macc=0., cls_ious=[], cls_accs=[]):
+        self.miou = miou
+        self.oa = oa
+        self.macc = macc
+        self.cls_ious = cls_ious
+        self.cls_accs = cls_accs
 
-#     Args:
-#         num_classes:
-#         num_parts:
-#         objects: [int]
-#         preds:[(num_parts,num_points)]
-#         targets: [(num_points)]
-
-#     Returns:
-
-#     """
-#     shape_iou_tot = [0.0] * num_classes
-#     shape_iou_cnt = [0] * num_classes
-#     part_intersect = [np.zeros((num_parts[o_l]), dtype=np.float32) for o_l in range(num_classes)]
-#     part_union = [np.zeros((num_parts[o_l]), dtype=np.float32) + 1e-6 for o_l in range(num_classes)]
-
-#     for obj, cur_pred, cur_gt in zip(objects, preds, targets):
-#         cur_num_parts = num_parts[obj]
-#         cur_pred = np.argmax(cur_pred[1:, :], axis=0) + 1
-#         cur_pred[cur_gt == 0] = 0
-#         cur_shape_iou_tot = 0.0
-#         cur_shape_iou_cnt = 0
-#         for j in range(1, cur_num_parts):
-#             cur_gt_mask = (cur_gt == j)
-#             cur_pred_mask = (cur_pred == j)
-
-#             has_gt = (np.sum(cur_gt_mask) > 0)
-#             has_pred = (np.sum(cur_pred_mask) > 0)
-
-#             if has_gt or has_pred:
-#                 intersect = np.sum(cur_gt_mask & cur_pred_mask)
-#                 union = np.sum(cur_gt_mask | cur_pred_mask)
-#                 iou = intersect / union
-
-#                 cur_shape_iou_tot += iou
-#                 cur_shape_iou_cnt += 1
-
-#                 part_intersect[obj][j] += intersect
-#                 part_union[obj][j] += union
-#         if cur_shape_iou_cnt > 0:
-#             cur_shape_miou = cur_shape_iou_tot / cur_shape_iou_cnt
-#             shape_iou_tot[obj] += cur_shape_miou
-#             shape_iou_cnt[obj] += 1
-
-#     msIoU = [shape_iou_tot[o_l] / shape_iou_cnt[o_l] for o_l in range(num_classes)]
-#     part_iou = [np.divide(part_intersect[o_l][1:], part_union[o_l][1:]) for o_l in range(num_classes)]
-#     mpIoU = [np.mean(part_iou[o_l]) for o_l in range(num_classes)]
-
-#     # Print instance mean
-#     mmsIoU = np.mean(np.array(msIoU))
-#     mmpIoU = np.mean(mpIoU)
-
-#     return msIoU, mpIoU, mmsIoU, mmpIoU
+    def update(self, other):
+        self.miou = other.miou
+        self.oa = other.oa
+        self.macc = other.macc
+        self.cls_ious = other.cls_ious
+        self.cls_accs = other.cls_accs
 
 
-# def IoU_from_confusions(confusions):
-#     """
-#     Computes IoU from confusion matrices.
-#     :param confusions: ([..., n_c, n_c] np.int32). Can be any dimension, the confusion matrices should be described by
-#     the last axes. n_c = number of classes
-#     :param ignore_unclassified: (bool). True if the the first class should be ignored in the results
-#     :return: ([..., n_c] np.float32) IoU score
-#     """
+def cal_iou(seg_true_all, seg_pred_all, seg_label_all, class_choice, seg_num_list, index_start_list, eva=False):
+    shape_ious, category = [], {}
+    for seg_pred, seg_true, seg_label in zip(seg_true_all, seg_pred_all, seg_label_all):
+        if not class_choice:
+            index_start = index_start_list[seg_label]
+            seg_num = seg_num_list[seg_label]
+            parts = range(index_start, index_start + seg_num)
+        else:
+            parts = range(seg_num_list[seg_label])
+        part_ious = []
+        for part in parts:
+            I = np.sum(np.logical_and(seg_pred == part, seg_true == part))
+            U = np.sum(np.logical_or(seg_pred == part, seg_true == part))
+            iou = 1 if U == 0 else float(I) / U # If the union of groundtruth and prediction points is empty, then count part IoU as 1
+            part_ious.append(iou)
+        shape_ious.append(np.mean(part_ious))
+        category[seg_label].append(shape_ious[-1]) if seg_label in category else [shape_ious[-1]]
 
-#     # Compute TP, FP, FN. This assume that the second to last axis counts the truths (like the first axis of a
-#     # confusion matrix), and that the last axis counts the predictions (like the second axis of a confusion matrix)
-#     TP = np.diagonal(confusions, axis1=-2, axis2=-1)
-#     TP_plus_FN = np.sum(confusions, axis=-1)
-#     TP_plus_FP = np.sum(confusions, axis=-2)
-
-#     # Compute IoU
-#     IoU = TP / (TP_plus_FP + TP_plus_FN - TP + 1e-6)
-
-#     # Compute miou with only the actual classes
-#     mask = TP_plus_FN < 1e-3
-#     counts = np.sum(1 - mask, axis=-1, keepdims=True)
-#     miou = np.sum(IoU, axis=-1, keepdims=True) / (counts + 1e-6)
-
-#     # If class is absent, place miou in place of 0 IoU to get the actual mean later
-#     IoU += mask * miou
-
-#     return IoU
+    return shape_ious, category if eva else shape_ious
 
 
-# def shapenetpart_metrics(num_classes, num_parts, objects, preds, targets, masks):
-#     """
-#     Args:
-#         num_classes:
-#         num_parts:
-#         objects: [int]
-#         preds:[(num_parts,num_points)]
-#         targets: [(num_points)]
-#         masks: [(num_points)]
-#     """
-#     total_correct = 0.0
-#     total_seen = 0.0
-#     Confs = []
-#     for obj, cur_pred, cur_gt, cur_mask in zip(objects, preds, targets, masks):
-#         obj = int(obj)
-#         cur_num_parts = num_parts[obj]
-#         cur_pred = np.argmax(cur_pred, axis=0)
-#         cur_pred = cur_pred[cur_mask]
-#         cur_gt = cur_gt[cur_mask]
-#         correct = np.sum(cur_pred == cur_gt)
-#         total_correct += correct
-#         total_seen += cur_pred.shape[0]
-#         parts = [j for j in range(cur_num_parts)]
-#         Confs += [confusion_matrix(cur_gt, cur_pred, labels=parts)]
+class ResultShapeNetPart:
+    def __init__(self, class_choice, seg_num_list, index_start_list):
+        self.cls_true_all = []
+        self.cls_pred_all = []
+        self.seg_true_all = []
+        self.seg_pred_all = []
+        self.seg_label_all = []
+        self.class_choice = class_choice
+        self.seg_num_list = seg_num_list
+        self.index_start_list = index_start_list
 
-#     Confs = np.array(Confs)
-#     obj_mious = []
-#     objects = np.asarray(objects)
-#     for l in range(num_classes):
-#         obj_inds = np.where(objects == l)[0]
-#         obj_confs = np.stack(Confs[obj_inds])
-#         obj_IoUs = IoU_from_confusions(obj_confs)
-#         obj_mious += [np.mean(obj_IoUs, axis=-1)]
-
-#     objs_average = [np.mean(mious) for mious in obj_mious]
-#     instance_average = np.mean(np.hstack(obj_mious))
-#     class_average = np.mean(objs_average)
-#     acc = total_correct / total_seen
-
-#     print('Objs | Inst | Air  Bag  Cap  Car  Cha  Ear  Gui  Kni  Lam  Lap  Mot  Mug  Pis  Roc  Ska  Tab')
-#     print('-----|------|--------------------------------------------------------------------------------')
-
-#     s = '{:4.1f} | {:4.1f} | '.format(100 * class_average, 100 * instance_average)
-#     for Amiou in objs_average:
-#         s += '{:4.1f} '.format(100 * Amiou)
-#     print(s + '\n')
-#     return acc, objs_average, class_average, instance_average
+    def update(self, cls_true, cls_pred, seg_true, seg_pred, seg_label):
+        assert len(cls_true.shape()) == len(cls_true.shape()) == len(seg_label.shape()) == 1
+        assert len(seg_pred.shape()) == len(seg_true.shape()) == 2
+        self.cls_true_all.append(cls_true)
+        self.cls_pred_all.append(cls_pred)
+        self.seg_true_all.append(seg_true)
+        self.seg_pred_all.append(seg_pred)
+        self.seg_label_all.append(seg_label)
+    
+    def cal_results(self, eva=False):
+        assert not eva
+        cls_true_all = np.concatenate(self.cls_true_all)
+        cls_pred_all = np.concatenate(self.cls_pred_all)
+        seg_true_all = np.concatenate(self.seg_true_all, axis=0)
+        seg_pred_all = np.concatenate(self.seg_pred_all, axis=0)
+        seg_label_all = np.concatenate(self.seg_label_all)
+        oa = metrics.accuracy_score(cls_true_all, cls_pred_all)
+        macc = metrics.balanced_accuracy_score(cls_true_all, cls_pred_all)
+        miou = self.cal_iou(seg_true_all, seg_pred_all, seg_label_all, self.class_choice, self.seg_num_list, self.index_start_list)
+        metrics = MetricsShapeNetPart(miou, oa, macc)
+        return metrics

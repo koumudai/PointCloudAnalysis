@@ -1,6 +1,6 @@
-# from .runner import run_net
-# from .runner_______ import test_net
-# from .runner_pretrain import run_net as pretrain_run_net
-# from .runner_finetune import run_net as finetune_run_net
-# from .runner_finetune import test_net as test_run_net
-# from .runner import train
+# ManagerCls
+from managers.manager_cls import ManagerCls
+# ManagerPartSeg
+from managers.manager_part_seg import ManagerPartSeg
+# # ManagerSemSeg
+# from managers.manager_sem_seg import ManagerSemSeg

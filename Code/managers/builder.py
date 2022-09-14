@@ -4,25 +4,29 @@ import torch
 from datasets import build_dataset_from_cfg
 from models import build_model_from_cfg
 from losses import build_criterion_from_cfg
-from optimizers import build_optimizer_from_cfg
-from schedulers import build_scheduler_from_cfg
+from timm.optim.optim_factory import create_optimizer
+from timm.scheduler.scheduler_factory import create_scheduler
 
 
 def worker_init_fn(worker_id):
     np.random.seed(np.random.get_state()[1][0] + worker_id)
 
 
-def build_dataset(args, cfgs):
-    dataset = build_dataset_from_cfg(cfgs._base_, cfgs.others)
-    is_train = (cfgs.others.subset == 'train')
+def get_class_names(cfgs):
+    return cfgs.cat2id.keys()
 
+
+def build_dataset(args, cfgs):
+    dataset = build_dataset_from_cfg(cfgs)
+    is_train = not (cfgs.subset == 'test')
+    
     dataloader = torch.utils.data.DataLoader(dataset,
-                                             batch_size = cfgs.others.bs,
+                                             batch_size = cfgs.bs,
                                              shuffle = is_train, 
-                                             drop_last = is_train,
+                                             drop_last = is_train and (len(dataset) >= 100),
                                              num_workers = int(args.num_workers),
                                              worker_init_fn=worker_init_fn)
-    return dataloader, dataset.class_names
+    return dataloader
 
 
 def build_model(cfgs):
@@ -36,22 +40,25 @@ def build_criterion(cfgs):
 
 
 def build_optimizer(cfgs, model):
-    optimizer = build_optimizer_from_cfg(model, cfgs.name, cfgs.lr, **cfgs.kwargs)
+    optimizer = create_optimizer(cfgs, model)
     return optimizer
 
 
 def build_scheduler(cfgs, optimizer):
-    scheduler = build_scheduler_from_cfg(cfgs, optimizer)
+    scheduler, _ = create_scheduler(cfgs, optimizer)
     return scheduler
 
 
-def save_checkpoint(ckpt_path, epoch_idx, model, optimizer, scheduler, metrics, logger):
+def build_transform(cfgs):
+    raise NotImplementedError()
+
+
+def save_checkpoint(ckpt_path, epoch_idx, model, optimizer, scheduler, logger):
     torch.save({
         'epoch': epoch_idx,
         'model': model.state_dict(),
         'optimizer': optimizer.state_dict(),
         'scheduler': None if scheduler is None else scheduler.state_dict(),
-        'metrics': metrics,
         }, ckpt_path)
     logger.info(f'[Checkpoint] Save checkpoint at {ckpt_path}')
 
@@ -61,22 +68,23 @@ def load_checkpoint(ckpt_path, model, logger):
         raise NotImplementedError(f'[Checkpoint] No checkpoint file from path {ckpt_path}...')
         
     # load state dict
-    state_dict = torch.load(ckpt_path, map_location='cpu')
+    logger.info(f'[Load] loading checkpoint {ckpt_path}')
+    state_dict = torch.load(ckpt_path)
 
     epoch_idx = state_dict['epoch']
     model.load_state_dict(state_dict['model'])
 
     return epoch_idx
 
-def resume_checkpoint(ckpt_path, cfgs, model, optimizer, scheduler, logger):
-    ckpt_path = ckpt_path if cfgs.ckpt_path is None else cfgs.ckpt_path
+def resume_checkpoint(ckpt_path, model, optimizer, scheduler, logger):
     if not os.path.exists(ckpt_path):
         raise NotImplementedError(f'[Checkpoint] No checkpoint file from path {ckpt_path}...')
 
     # load state dict
     logger.info(f'[Resume] loading checkpoint {ckpt_path}')
-    ckpt = torch.load(ckpt_path, map_location='cpu')
-    cfgs.start_epoch = ckpt['epoch']
+    ckpt = torch.load(ckpt_path)
+
+    epoch_idx = ckpt['epoch']
     model.load_state_dict(ckpt['model'])
     if optimizer is not None:
         try:
@@ -88,6 +96,5 @@ def resume_checkpoint(ckpt_path, cfgs, model, optimizer, scheduler, logger):
             scheduler.load_state_dict(ckpt['scheduler'])
         except:
             logger.info('scheduler does not match')
-    metrics = ckpt['metrics']
 
-    return cfgs.start_epoch, metrics
+    return epoch_idx

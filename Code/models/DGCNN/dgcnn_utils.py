@@ -1,6 +1,9 @@
 '''
-https://arxiv.org/abs/1801.07829
-Dynamic Graph CNN for Learning on Point Clouds
+Paper Name                  : Dynamic Graph CNN for Learning on Point Clouds
+Arxiv                       : https://arxiv.org/abs/1801.07829
+Official Implementation     : https://github.com/WangYueFt/dgcnn
+Third Party Implementation  : https://github.com/antao97/dgcnn.pytorch
+Third Party Implementation  : https://github.com/koumudai/PointCloudAnalysis/tree/master/Code/models/DGCNN
 '''
 import torch
 import torch.nn as nn
